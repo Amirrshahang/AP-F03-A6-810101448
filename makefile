@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++20 -I./include -Wall -Wextra -fsanitize=address -fsanitize=undefined
+CXXFLAGS = -std=c++20 -I./include -Wall -Wextra -fsanitize=address -fsanitize=undefined -Wno-unused-parameter
 
 SRCDIR = src
 OBJDIR = obj

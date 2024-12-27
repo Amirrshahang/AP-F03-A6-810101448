@@ -1,14 +1,13 @@
 #include "global.hpp"
 #include "UserManager.hpp"
 #include "DistrictManager.hpp"
-#include "SignupException.hpp"
 #include "RestaurantManager.hpp"
 
 class BadRequestException : public runtime_error {
 public:
     BadRequestException(const string& message) : runtime_error(message) {}
 };
-void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager) {
+void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager,RestaurantManager& restaurantManager) {
 
     const string validMethods[] = {"GET", "POST", "PUT", "DELETE"};
     bool isValid = false;
@@ -29,6 +28,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
     regex districtsPattern(R"(^GET\s+districts\s+\?$)");
     regex districtDetailPattern(R"(^GET\s+districts\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
     regex putDistrictPattern(R"(^PUT\s+my_district\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
+    regex getRestaurantsPattern(R"(^GET\s+restaurants\s+\?$)");
     smatch match;
 
     if (regex_match(command, match, signupPattern)) {
@@ -60,7 +60,14 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }
     } else if (regex_match(command, match, districtsPattern)) {
         try {
-            districtManager.printAllDistricts();
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                districtManager.printAllDistricts();
+            }
+            else{
+                cerr << "Permission Denied" << endl;
+            }
+
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
@@ -68,13 +75,18 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         string districtName = match[1];
 
         try {
-            districtManager.printNeighbors(districtName);
+            string username = userManager.getLoggedInUsername();
+            if(!username.empty()){
+                districtManager.printNeighbors(districtName);
+            }
+            else{
+                cerr << "Permission Denied" << endl;
+            }
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
     } else if (regex_match(command, match, putDistrictPattern)) {
         string districtName = match[1];
-        
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -86,27 +98,44 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else {
+    } else if (regex_match(command, match, getRestaurantsPattern)) {
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                string userDistrict = userManager.getUserDistrict(username);
+                restaurantManager.getRestaurantsByProximity(userDistrict);
+            } else {
+                cerr << "Permission Denied" << endl;
+            }
+        } catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+        }
+    }else {
         cout << "Invalid command format" << endl;
     }
 }
 
+int main(int argc, char* argv[]) {
+    
+    string restaurantsFile = CSV_PATH + argv[1]; 
+    string districtsFile = CSV_PATH + argv[2];  
 
-int main() {
     string command;
     UserManager userManager;
     DistrictManager districtManager;
-    RestaurantManager restaurantManager;
+    RestaurantManager restaurantManager(districtManager);
 
-    districtManager.loadFromCSV(CSV_PATH + "districts.csv");
-    restaurantManager.loadRestaurantsFromCSV(CSV_PATH + "restaurants.csv");
-
-    //districtManager.printAllDistricts();
+    try {
+        restaurantManager.loadRestaurantsFromCSV(restaurantsFile);
+        districtManager.loadFromCSV(districtsFile);
+    } catch (const exception& e) {
+        cerr << "Error loading CSV files: " << e.what() << endl;
+        return 1;
+    }
 
     while (getline(cin, command)) {
         try {
-            processCommand(command, userManager, districtManager);
-
+            processCommand(command, userManager, districtManager, restaurantManager);
         } catch (const BadRequestException& e) {
             cerr << e.what() << endl;
         }
@@ -159,8 +188,24 @@ POST logout ?
 
 
 GET districts ? district "Saadat Abad"
+GET districts ? district "Omid Town"
+
 GET districts ?
 PUT my_district ? district "Tajrish"
-PUT my_district ? district "Merrikh"
+PUT my_district ? district "Omid Town"
+
+GET restaurants ?
+
+
+
+
+
+
+
+
+
+
+
+
 
 */

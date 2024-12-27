@@ -10,6 +10,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <regex>
+#include <algorithm>
+#include <queue>
+#include <sstream>
 
 using namespace std;
 

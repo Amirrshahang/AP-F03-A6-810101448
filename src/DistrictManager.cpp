@@ -38,6 +38,7 @@ vector<string> DistrictManager::getNeighbors(const string& districtName) const {
     }
     return {};
 }
+
 void DistrictManager::printAllDistricts() const {
     if (districts.empty()) {
         throw runtime_error("District list is empty.");
@@ -54,6 +55,7 @@ void DistrictManager::printAllDistricts() const {
         cout << endl;
     }
 }
+
 void DistrictManager::printNeighbors(const string& districtName) const {
     auto it = districts.find(districtName);
     if (it != districts.end()) {
@@ -68,9 +70,5 @@ void DistrictManager::printNeighbors(const string& districtName) const {
 }
 
 bool DistrictManager::isDistrictExists(const string& districtName) const {
-    
     return districts.find(districtName) != districts.end();
 }
-
-
-
