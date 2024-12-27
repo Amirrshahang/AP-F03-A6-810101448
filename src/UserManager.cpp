@@ -1,56 +1,70 @@
 #include "UserManager.hpp"
-#include <iostream>
-#include <stdexcept>
 
-std::string UserManager::signup(const std::string& username, const std::string& password) {
+string UserManager::signup(const string& username, const string& password, DistrictManager& districtManager) {
     if (loggedInUser.has_value()) {
-        throw std::runtime_error("Permission Denied: User already logged in.");
+        throw runtime_error("Permission Denied");
     }
 
     if (userExists(username)) {
-        throw std::runtime_error("Bad Request: Username already exists.");
+        throw runtime_error("Bad Request");
     }
 
-    users[username] = User(username, password);
+users.emplace(username, User(username, password, &districtManager));
+    loggedInUser = username;
     return "OK";
 }
 
-std::string UserManager::login(const std::string& username, const std::string& password) {
+string UserManager::login(const string& username, const string& password) {
     if (!userExists(username)) {
-        throw std::runtime_error("Bad Request: Username does not exist.");
+        throw runtime_error("Not Found");
     }
 
     if (loggedInUser.has_value()) {
-        throw std::runtime_error("Permission Denied: Another user is already logged in.");
+        throw runtime_error("Permission Denied");
     }
 
     if (users[username].login(username, password)) {
         loggedInUser = username;
-        return "OK: Login successful";
+        return "OK";
     }
 
-    throw std::runtime_error("Bad Request: Invalid password.");
+    throw runtime_error("Permission Denied");
 }
 
-void UserManager::logout() {
+string UserManager::logout() {
     if (!loggedInUser.has_value()) {
-        throw std::runtime_error("Bad Request: No user is currently logged in.");
+        throw runtime_error("Permission Denied");
     }
 
     users[loggedInUser.value()].logout();
     loggedInUser.reset();
-    std::cout << "OK: Logout successful." << std::endl;
+    return "OK";
 }
 
 bool UserManager::isLoggedIn() const {
     return loggedInUser.has_value();
 }
 
-bool UserManager::userExists(const std::string& username) const {
+bool UserManager::userExists(const string& username) const {
     return users.find(username) != users.end();
 }
 
-std::string UserManager::getLoggedInUsername() const {
+void UserManager::assignDistrictToUser(const string& username, const string& district) {
+    if (userExists(username)) {
+        users[username].updateDistrict(district);
+    } else {
+        throw runtime_error("Not Found");
+    }
+}
+
+string UserManager::getUserDistrict(const string& username) const {
+    if (userExists(username)) {
+        return users.at(username).getDistrict();
+    }
+    throw runtime_error("Not Found");
+}
+
+string UserManager::getLoggedInUsername() const {
     if (loggedInUser.has_value()) {
         return loggedInUser.value();
     }
@@ -58,8 +72,8 @@ std::string UserManager::getLoggedInUsername() const {
 }
 
 void UserManager::printAllUsers() const {
-    std::cout << "Registered Users:" << std::endl;
+    cout << "Registered Users:" << endl;
     for (const auto& pair : users) {
-        std::cout << " - " << pair.first << std::endl;
+        cout << " - " << pair.first << endl;
     }
 }

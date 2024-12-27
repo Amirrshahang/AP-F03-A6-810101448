@@ -1,10 +1,11 @@
 #include "User.hpp"
 
-User::User()
-    : username(""), password(""), is_logged_in(false), current_district("") {}
 
-User::User(string uname, string pwd)
-    : username(uname), password(pwd), is_logged_in(false), current_district("") {}
+User::User() 
+    : username(""), password(""), is_logged_in(false), current_district(""), districtManager(nullptr) {}
+
+User::User(string uname, string pwd, DistrictManager* dm) 
+    : username(uname), password(pwd), is_logged_in(false), districtManager(dm) {}
 
 bool User::login(string uname, string pwd) {
     if (uname == username && pwd == password) {
@@ -16,10 +17,6 @@ bool User::login(string uname, string pwd) {
 
 void User::logout() {
     is_logged_in = false;
-}
-
-void User::setDistrict(string district) {
-    current_district = district;
 }
 
 void User::addReservation(string reservation) {
@@ -35,6 +32,15 @@ void User::showReservations() {
         }
     }
 }
+
+void User::updateDistrict(const string& district) {
+    if (districtManager->isDistrictExists(district)) {
+        current_district = district;
+    } else {
+        throw runtime_error("Not Found");
+    }
+}
+
 
 string User::getUsername() const { return username; }
 

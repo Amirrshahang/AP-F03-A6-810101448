@@ -1,14 +1,19 @@
 #include "DistrictManager.hpp"
 #include <sstream>
 #include <fstream>
+#include <map>
+#include <vector>
+#include <string>
+#include <iostream>
+using namespace std;
 
 void DistrictManager::loadFromCSV(const string& filePath) {
     ifstream file(filePath);
     if (!file.is_open()) {
         throw runtime_error("Could not open file");
     }
-
     string line;
+    getline(file, line);
     while (getline(file, line)) {
         istringstream lineStream(line);
         string district;
@@ -33,14 +38,39 @@ vector<string> DistrictManager::getNeighbors(const string& districtName) const {
     }
     return {};
 }
-
 void DistrictManager::printAllDistricts() const {
+    if (districts.empty()) {
+        throw runtime_error("District list is empty.");
+    }
+
     for (auto it = districts.begin(); it != districts.end(); ++it) {
         cout << it->first << ": ";
         for (auto neighborIt = it->second.begin(); neighborIt != it->second.end(); ++neighborIt) {
-            cout << *neighborIt << " ";
+            cout << *neighborIt;
+            if (neighborIt + 1 != it->second.end()) {
+                cout << ", ";
+            }
         }
         cout << endl;
     }
 }
+void DistrictManager::printNeighbors(const string& districtName) const {
+    auto it = districts.find(districtName);
+    if (it != districts.end()) {
+        cout << districtName << ": ";
+        for (const auto& neighbor : it->second) {
+            cout << neighbor << " ";
+        }
+        cout << endl;
+    } else {
+        throw runtime_error("Not Found");
+    }
+}
+
+bool DistrictManager::isDistrictExists(const string& districtName) const {
+    
+    return districts.find(districtName) != districts.end();
+}
+
+
 
