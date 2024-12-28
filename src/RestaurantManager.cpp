@@ -143,7 +143,7 @@ Restaurant* RestaurantManager::findRestaurantByName(const string& name) {
             return restaurant.get(); 
         }
     }
-    throw runtime_error("Not Found");
+    throw runtime_error("Not Found: Restaurant does not exist");
 }
 
 bool RestaurantManager::hasUserTimeConflict(const string& username, int startTime, int endTime) const {
@@ -161,7 +161,23 @@ bool RestaurantManager::hasUserTimeConflict(const string& username, int startTim
     return false;
 }
 
-int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<string>& orderedFoods) {
+bool RestaurantManager::isUserReservationConflict(const string& username, int startTime, int endTime) const {
+    for (const auto& restaurant : restaurants) {
+        const auto& userReservations = restaurant->getUserReservations(username);
+
+        for (const auto& [id, details] : userReservations) {
+            int reservedStart = get<1>(details);
+            int reservedEnd = get<2>(details);
+
+            if (!(endTime <= reservedStart || startTime >= reservedEnd)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
         throw runtime_error("Not Found: Restaurant does not exist");
@@ -175,19 +191,24 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
         throw runtime_error("Permission Denied: Time slot not available");
     }
 
-    int totalPrice = 0;
-    if (!orderedFoods.empty()) { 
-        for (const auto& food : orderedFoods) {
-            const auto& foods = restaurant->getFoods();
-            auto it = foods.find(food);
-            if (it == foods.end()) {
-                throw runtime_error("Not Found: Food '" + food + "' not available in the restaurant");
-            }       
-            totalPrice += stoi(it->second);
-        }
+    if (isUserReservationConflict(username, startTime, endTime)) {
+        throw runtime_error("Permission Denied: User has a conflicting reservation");
     }
 
-    int reserveId = restaurant->addReservation(tableId, startTime, endTime, username);
+    int totalPrice = 0;
+    vector<pair<string, int>> validFoods;
+
+    for (const auto& [foodName, count] : orderedFoods) {
+        const auto& foods = restaurant->getFoods();
+        auto it = foods.find(foodName);
+        if (it == foods.end()) {
+            throw runtime_error("Not Found: Food '" + foodName + "' not available in the restaurant");
+        }
+        totalPrice += stoi(it->second) * count;
+        validFoods.emplace_back(foodName, count);
+    }
+
+    int reserveId = restaurant->addReservation(tableId, startTime, endTime, username, validFoods);
 
     cout << "Reserve ID: " << reserveId << endl;
     cout << "Table " << tableId << " for " << startTime << " to " << endTime << " in " << restaurantName << endl;
@@ -196,39 +217,150 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
     return reserveId;
 }
 
-void RestaurantManager::showUserReservations(const string& username, const string& restaurantName, const string& reserveId) {
-    vector<tuple<int, string, int, int, vector<pair<string, int>>>> reservations;
 
+void RestaurantManager::showAllUserReservations(const string& username) {
+    vector<tuple<int, string, int, int, int, vector<pair<string, int>>>> reservations;
+
+    for (const auto& restaurant : restaurants) {
+        const auto& userReservations = restaurant->getUserReservations(username);
+
+        for (const auto& [id, details] : userReservations) {
+            int tableId = get<0>(details);
+            int startTime = get<1>(details);
+            int endTime = get<2>(details);
+            const auto& foods = get<3>(details); // غذاها و تعدادشان
+
+            reservations.emplace_back(
+                id,                         // int: شناسه رزرو
+                restaurant->getName(),      // string: نام رستوران
+                tableId,                    // int: شماره میز
+                startTime,                  // int: زمان شروع
+                endTime,                    // int: زمان پایان
+                foods                       // vector<pair<string, int>>: غذاها و تعداد
+            );
+        }
+    }
+
+    if (reservations.empty()) {
+        throw runtime_error("Not Found: No reservations found for this user");
+    }
+
+    // مرتب‌سازی رزروها بر اساس زمان شروع
+    sort(reservations.begin(), reservations.end(), [](const auto& a, const auto& b) {
+        return get<3>(a) < get<3>(b); // مقایسه زمان شروع
+    });
+
+    // نمایش رزروها
+    for (const auto& [id, restaurant, tableId, startTime, endTime, foods] : reservations) {
+        cout << id << ": " << restaurant << " " << tableId << " " << startTime << "-" << endTime;
+
+        if (!foods.empty()) {
+            for (const auto& [foodName, count] : foods) {
+                cout << " " << foodName << "(" << count << ")";
+            }
+        }
+
+        cout << endl;
+    }
+}
+void RestaurantManager::showUserReservations(const string& username, const string& restaurantName) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
         throw runtime_error("Not Found: Restaurant does not exist");
     }
 
+    // دریافت رزروهای کاربر برای این رستوران
     const auto& userReservations = restaurant->getUserReservations(username);
+    if (userReservations.empty()) {
+        throw runtime_error("Not Found: No reservations found for this user in the restaurant");
+    }
 
     for (const auto& [id, details] : userReservations) {
-        if (!reserveId.empty() && to_string(id) != reserveId) {
-            continue;
-        }
-
         int tableId = get<0>(details);
         int startTime = get<1>(details);
         int endTime = get<2>(details);
         const auto& foods = get<3>(details);
 
-        reservations.emplace_back(id, restaurant->getName(), tableId, startTime, endTime, foods);
-    }
+        // چاپ اطلاعات رزرو
+        cout << id << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
 
-    if (reservations.empty()) {
-        throw runtime_error("Not Found");
-    }
-
-    for (const auto& [id, restaurant, tableId, startTime, endTime, foods] : reservations) {
-        cout << id << ": " << restaurant << " " << tableId << " " << startTime << "-" << endTime;
-        for (const auto& [food, count] : foods) {
-            cout << " " << food << "(" << count << ")";
+        // چاپ غذاهای سفارش داده‌شده (در صورت وجود)
+        if (!foods.empty()) {
+            for (const auto& [foodName, count] : foods) {
+                cout << " " << foodName << "(" << count << ")";
+            }
         }
+
         cout << endl;
     }
 }
+void RestaurantManager::showUserReservationById(const string& username, const string& restaurantName, const string& reserveId) {
+    // یافتن رستوران
+    Restaurant* restaurant = findRestaurantByName(restaurantName);
+    if (!restaurant) {
+        throw runtime_error("Not Found: Restaurant does not exist");
+    }
+
+    // تبدیل شناسه رزرو از string به int
+    int reservationId = stoi(reserveId);
+
+    // دریافت رزرو کاربر
+    const auto& userReservations = restaurant->getUserReservations(username);
+    auto it = userReservations.find(reservationId);
+    if (it == userReservations.end()) {
+        throw runtime_error("Not Found: Reservation ID not found for this user in the specified restaurant");
+    }
+
+    // استخراج اطلاعات رزرو
+    const auto& details = it->second;
+    int tableId = get<0>(details);
+    int startTime = get<1>(details);
+    int endTime = get<2>(details);
+    const auto& foods = get<3>(details);
+
+    // نمایش اطلاعات رزرو
+    cout << reservationId << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
+
+    // نمایش غذاهای سفارش داده‌شده
+    if (!foods.empty()) {
+        for (const auto& [foodName, count] : foods) {
+            cout << " " << foodName << "(" << count << ")";
+        }
+    }
+
+    cout << endl;
+}
+void RestaurantManager::deleteReservation(const string& username, const string& restaurantName, int reserveId) {
+    Restaurant* restaurant = findRestaurantByName(restaurantName);
+    if (!restaurant) {
+        throw runtime_error("Not Found: Restaurant does not exist");
+    }
+
+    if (!restaurant->isReservationExists(reserveId)) {
+        throw runtime_error("Not Found: Reservation does not exist");
+    }
+
+    if (!restaurant->isReservationOwnedByUser(reserveId, username)) {
+        throw runtime_error("Permission Denied: Reservation does not belong to the user");
+    }
+
+    restaurant->removeReservation(reserveId);
+
+    cout << "Reservation " << reserveId << " in " << restaurantName << " deleted successfully." << endl;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

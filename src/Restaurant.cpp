@@ -20,63 +20,29 @@ Restaurant::Restaurant(const string& name, const string& district, const string&
         tables[i] = {};
     }
 }
-// void Restaurant::printReservations() const {
-//     cout << "Reservations for " << name << ":\n";
-
-//     if (reservations.empty()) {
-//         cout << "No reservations found.\n";
-//         return;
-//     }
-
-//     for (const auto& [reserveId, details] : reservations) {
-//         const string& username = get<0>(details);
-//         int tableId = get<1>(details);
-//         int startTime = get<2>(details);
-//         int endTime = get<3>(details);
-
-//         cout << "Reservation ID: " << reserveId
-//              << ", User: " << username
-//              << ", Table: " << tableId
-//              << ", Time: " << startTime << "-" << endTime
-//              << endl;
-//     }
-// }
-
-// void Restaurant::printTables() const {
-//     cout << "Tables and Reservations for " << name << ":\n";
-
-//     for (const auto& [tableId, reservations] : tables) {
-//         cout << "Table " << tableId << ": ";
-
-//         if (reservations.empty()) {
-//             cout << "No reservations.";
-//         } else {
-//             for (const auto& [start, end] : reservations) {
-//                 cout << "(" << start << "-" << end << ") ";
-//             }
-//         }
-
-//         cout << endl;
-//     }
-// }
 
 map<int, tuple<int, int, int, vector<pair<string, int>>>> Restaurant::getUserReservations(const string& username) const {
     map<int, tuple<int, int, int, vector<pair<string, int>>>> userReservations;
 
     for (const auto& [id, details] : reservations) {
-        if (get<0>(details) == username) { 
-            userReservations[id] = {get<1>(details), get<2>(details), get<3>(details), get<4>(details)};
+        if (get<0>(details) == username) { // بررسی نام کاربر
+            userReservations[id] = {
+                get<1>(details),        // شماره میز
+                get<2>(details),        // زمان شروع
+                get<3>(details),        // زمان پایان
+                get<4>(details)         // لیست غذاها
+            };
         }
     }
 
     return userReservations;
 }
 
-string Restaurant::getName() const {return name;}
+string Restaurant::getName() const { return name; }
 
-string Restaurant::getDistrict() const {return district;}
+string Restaurant::getDistrict() const { return district; }
 
-map<string, string> Restaurant::getFoods() const {return foods;}
+map<string, string> Restaurant::getFoods() const { return foods; }
 
 void Restaurant::printRestaurantDetails() const {
     cout << "Name: " << name << endl;
@@ -108,10 +74,10 @@ void Restaurant::printRestaurantDetails() const {
 bool Restaurant::isTableAvailable(int tableId) const {
     return tables.find(tableId) != tables.end();
 }
+
 map<int, vector<pair<int, int>>> Restaurant::getAllReservations() const {
     return tables;
 }
-
 
 bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) const {
     const auto& reservations = tables.at(tableId);
@@ -123,11 +89,48 @@ bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) co
     return true;
 }
 
-int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username) {
+int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
     static int nextReserveId = 1;
+
+    if (!isTableAvailable(tableId)) {
+        throw runtime_error("Not Found: Table does not exist");
+    }
+    if (!isTimeSlotAvailable(tableId, startTime, endTime)) {
+        throw runtime_error("Permission Denied: Time slot is not available");
+    }
+
+    
     tables[tableId].emplace_back(startTime, endTime);
-    reservations[nextReserveId++] = {username, tableId, startTime, endTime};
+    reservations[nextReserveId++] = make_tuple(username, tableId, startTime, endTime, orderedFoods);
     return nextReserveId - 1;
 }
 
+bool Restaurant::isReservationExists(int reserveId) const {
+    return reservations.find(reserveId) != reservations.end();
+}
+
+bool Restaurant::isReservationOwnedByUser(int reserveId, const string& username) const {
+    auto it = reservations.find(reserveId);
+    if (it == reservations.end()) return false;
+    return get<0>(it->second) == username;
+}
+
+void Restaurant::removeReservation(int reserveId) {
+    auto it = reservations.find(reserveId);
+    if (it == reservations.end()) {
+        throw runtime_error("Not Found: Reservation does not exist");  //؟؟
+    }
+
+    int tableId = get<1>(it->second);
+    int startTime = get<2>(it->second);
+    int endTime = get<3>(it->second);
+
+    auto& tableReservations = tables[tableId];
+    tableReservations.erase(
+        remove(tableReservations.begin(), tableReservations.end(), make_pair(startTime, endTime)),
+        tableReservations.end()
+    );
+
+    reservations.erase(it);
+}
 

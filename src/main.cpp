@@ -28,10 +28,9 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
     regex getRestaurantsByFoodPattern(R"(^GET\s+restaurants\s+\?\s+food_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
     regex restaurantDetailPattern(R"(^GET\s+restaurant_detail\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
     regex reservePatternWithFoods(R"(^POST\s+reserve\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"\s+table_id\s+\"([0-9]+)\"\s+start_time\s+\"([0-9]+)\"\s+end_time\s+\"([0-9]+)\"\s*(?:foods\s+\"([a-zA-Z0-9_, ]*)\")?$)");
-    regex reservesPattern(R"(^GET\s+reserves\s*(?:\?\s+restaurant_name\s+\"([^\"]+)\"\s*(?:reserve_id\s+\"([^\"]+)\")?)?$)");
-
-
-
+    regex reservesPattern(R"(^GET\s+reserves\s*\?$)");
+    regex reservesWithDetailPattern(R"(^GET\s+reserves\s*(?:\?\s*restaurant_name\s+\"([^\"]+)\"\s*(?:reserve_id\s+\"([^\"]+)\")?)?\s*$)");
+    regex deleteReservePattern(R"(^DELETE\s+reserve\s+\?\s+restaurant_name\s+\"([^\"]+)\"\s+reserve_id\s+\"([^\"]+)\"$)");
 
     smatch match;
 
@@ -151,52 +150,86 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
             }
     } else if (regex_match(command, match, reservePatternWithFoods)) {
         try {
-            string username = userManager.getLoggedInUsername();
+           string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
-                    string restaurantName = match[1];
-                    int tableId = stoi(match[2]);
-                    int startTime = stoi(match[3]);
-                    int endTime = stoi(match[4]);
-                    vector<string> orderedFoods;
-                    if (match[5].matched) {
-                        string foodsStr = match[5];
-                        istringstream ss(foodsStr);
-                        string food;
-                        while (getline(ss, food, ',')) {
-                            orderedFoods.push_back(food);
-                            }
+                string restaurantName = match[1];
+                int tableId = stoi(match[2]);
+                int startTime = stoi(match[3]);
+                int endTime = stoi(match[4]);
+                vector<pair<string, int>> orderedFoods;
+
+                if (match[5].matched) {
+                string foodsStr = match[5];
+                map<string, int> foodCounts;
+
+                istringstream ss(foodsStr);
+                string food;
+                while (getline(ss, food, ',')) {
+                    foodCounts[food]++;
+                }
+
+                for (const auto& [foodName, count] : foodCounts) {
+                  orderedFoods.emplace_back(foodName, count);
                     }
+                }
                 try {
                     restaurantManager.reserveTable(restaurantName, tableId, startTime, endTime, username, orderedFoods);
                 } catch (const runtime_error& e) {
-                    cerr << e.what() <<endl;
+                    cerr << e.what() << endl;
                 }
-            }else {
+            } else {
                 throw runtime_error("Permission Denied");
-            }  
+            }
         }catch (const runtime_error& e) {
-        cerr << e.what() << endl;
+            cerr << e.what() << endl;
         }
     } else if (regex_match(command, match, reservesPattern)) {
+       try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                restaurantManager.showAllUserReservations(username);
+            }else{
+                throw runtime_error("Permission Denied");
+            }
+        }catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+        }  
+    } else if (regex_match(command, match, reservesWithDetailPattern)) {
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
-                    string restaurantName = match[1];
-                    string reserveId = match[2].matched ? match[2] : "";
-                try {
-                    restaurantManager.showUserReservations(username, restaurantName, reserveId);
-                } catch (const runtime_error& e) {
-                    cerr << e.what() <<endl;
-                    }
-            }else {
+
+                string restaurantName = match[1].matched ? match[1].str() : ""; 
+                string reserveId = match[2].matched ? match[2].str() : "";
+
+                if (reserveId.empty()) {
+                    restaurantManager.showUserReservations(username, restaurantName);
+
+                } else {
+                    restaurantManager.showUserReservationById(username, restaurantName, reserveId);
+                }
+            }else{
                 throw runtime_error("Permission Denied");
-            }  
+            }
         }catch (const runtime_error& e) {
-        cerr << e.what() << endl;
+            cerr << e.what() << endl;
         }
-    }else{
-        cout << "Invalid command format" << endl;
+    } else if (regex_match(command, match, deleteReservePattern)) {
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                string restaurantName = match[1];
+                int reserveId = stoi(match[2]);
+                restaurantManager.deleteReservation(username, restaurantName, reserveId);
+            }else{
+                throw runtime_error("Permission Denied");
+            }
+        }catch (const runtime_error& e) {
+            cerr << e.what() << endl;
         }
+    } else{
+        cout << "Invalid commandی format" << endl;
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -262,11 +295,18 @@ GET restaurants ? food_name "Sushi"
 POST reserve ? restaurant_name "Chicken Family" table_id "1"
 start_time "15" end_time "17" foods "Sib Zamini,Sokhari"
 
-POST reserve ? restaurant_name "Nofel Loshato" table_id "2" start_time "14" end_time "15"
-POST reserve ? restaurant_name "Nofel Loshato" table_id "1" start_time "18" end_time "19" foods "brger,szar"
+POST reserve ? restaurant_name "Nofel Loshato" table_id "1" start_time "22" end_time "23" foods "sezar"
+POST reserve ? restaurant_name "Nofel Loshato" table_id "2" start_time "15" end_time "17" foods "sezar"
+POST reserve ? restaurant_name "Nofel Loshato" table_id "3" start_time "17" end_time "18" foods "Kabab Barg,Kabab Barg"
 
+POST reserve ? restaurant_name "Apadana" table_id "1" start_time "12" end_time "14" foods "Noodles,Pizza"
 
-POST reserve ? restaurant_name "Apadana" table_id "1" start_time "10" end_time "11" foods "Noodles,Pizza"
+GET reserves ?
 
+GET reserves ? restaurant_name "Nofel Loshato"
+
+GET reserves ? restaurant_name "Nofel Loshato" reserve_id "2"
+
+DELETE reserve ? restaurant_name "Nofel Loshato" reserve_id "3"
 
 */
