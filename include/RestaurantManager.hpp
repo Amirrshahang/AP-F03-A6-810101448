@@ -12,9 +12,13 @@ private:
 public:
     RestaurantManager(DistrictManager& manager) : districtManager(manager) {} 
     Restaurant* getRestaurantByName(const string& name);
-    void getRestaurantsByProximity(const string& userDistrict);
-    void listAllRestaurants() const;
+    Restaurant* findRestaurantByName(const string& name);
     void loadRestaurantsFromCSV(const string& filename);
-    void displayRestaurantsByDistrict(const string& userDistrict);
+    void getRestaurantsByFood(const string& foodName);
+    void getRestaurantsByProximity(const string& userDistrict);
+    bool hasUserTimeConflict(const string& username, int startTime, int endTime) const;
+    int reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<string>& orderedFoods);
+    void showUserReservations(const string& username, const string& restaurantName, const string& reserveId);
+
 
 };

@@ -21,7 +21,7 @@ void DistrictManager::loadFromCSV(const string& filePath) {
 
         vector<string> neighbors;
         string neighbor;
-        while (getline(lineStream, neighbor, ',')) {
+        while (getline(lineStream, neighbor, ';')) {
             neighbors.push_back(neighbor);
         }
 

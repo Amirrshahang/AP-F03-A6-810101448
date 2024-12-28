@@ -1,9 +1,9 @@
 name,district,foods:prices,opening_time,closing_time,number_of_tables
-Green Garden,Valiasr,Pizza:250;Salad:150;Steak:350,8,23,35
-Ocean Wave,Saadat Abad,Sushi:400;Tempura:300;Noodles:200,12,24,25
-Cozy Corner,Jordan,Coffee:50;Sandwich:120;Cake:80,7,22,15
-Flame Grill,Enghelab,Burger:200;Fries:70;Hotdog:150,10,24,30
-Persian Delight,Tajrish,Ke bab:350;Stew:300;Rice:150,11,23,40
-Nofel Loshato,Enghelab,brger:220;sushi:550;sezar:440,11,24,30
-Bon Bon,Enghelab,Sandwich:120;Coffee:50;Steak:350,10,19,20
-Apadana,Omid Town,Pizza:450;Salad sokhari:150;Noodles:200,10,10,7
+Green Garden,Valiasr,Pizza:250;Salad:150;Steak:350,8,23,5
+Ocean Wave,Saadat Abad,Sushi:400;Tempura:300;Noodles:200,12,24,2
+Cozy Corner,Tajri,Coffee:50;Sandwich:120;Cake:80,7,22,5
+Flame Grill,Enghelab,Burger:200;Fries:70;Hotdog:150,10,24,3
+Persian Delight,Tajrish,Ke bab:350;Stew:300;Rice:150,11,23,4
+Nofel Loshato,Enghelab,brger:220;Kabab Barg:550;sezar:440,11,24,3
+Bon Bon,Enghelab,Sandwich:120;Coffee:50;Steak:350,10,19,2
+Apadana,Omid Town,Pizza:450;Kabab Barg:150;Noodles:200,10,10,7

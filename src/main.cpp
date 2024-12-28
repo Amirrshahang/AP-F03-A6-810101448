@@ -3,11 +3,7 @@
 #include "DistrictManager.hpp"
 #include "RestaurantManager.hpp"
 
-class BadRequestException : public runtime_error {
-public:
-    BadRequestException(const string& message) : runtime_error(message) {}
-};
-void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager,RestaurantManager& restaurantManager) {
+void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager, RestaurantManager& restaurantManager) {
 
     const string validMethods[] = {"GET", "POST", "PUT", "DELETE"};
     bool isValid = false;
@@ -19,7 +15,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }
     }
     if (!isValid) {
-        throw BadRequestException("Bad Request");
+        throw runtime_error("Bad Request");
     }
 
     regex signupPattern(R"(^POST\s+signup\s+\?\s+username\s+\"([a-zA-Z0-9_]+)\"\s+password\s+\"([a-zA-Z0-9_]+)\"$)");
@@ -29,6 +25,14 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
     regex districtDetailPattern(R"(^GET\s+districts\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
     regex putDistrictPattern(R"(^PUT\s+my_district\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
     regex getRestaurantsPattern(R"(^GET\s+restaurants\s+\?$)");
+    regex getRestaurantsByFoodPattern(R"(^GET\s+restaurants\s+\?\s+food_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
+    regex restaurantDetailPattern(R"(^GET\s+restaurant_detail\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
+    regex reservePatternWithFoods(R"(^POST\s+reserve\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"\s+table_id\s+\"([0-9]+)\"\s+start_time\s+\"([0-9]+)\"\s+end_time\s+\"([0-9]+)\"\s*(?:foods\s+\"([a-zA-Z0-9_, ]*)\")?$)");
+    regex reservesPattern(R"(^GET\s+reserves\s*(?:\?\s+restaurant_name\s+\"([^\"]+)\"\s*(?:reserve_id\s+\"([^\"]+)\")?)?$)");
+
+
+
+
     smatch match;
 
     if (regex_match(command, match, signupPattern)) {
@@ -36,7 +40,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         string password = match[2];
 
         try {
-            string result = userManager.signup(username, password,districtManager);
+            string result = userManager.signup(username, password, districtManager);
             cout << result << endl;
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
@@ -64,10 +68,9 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
             if (!username.empty()) {
                 districtManager.printAllDistricts();
             }
-            else{
-                cerr << "Permission Denied" << endl;
+            else {
+                throw runtime_error("Permission Denied");
             }
-
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
@@ -76,11 +79,11 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
 
         try {
             string username = userManager.getLoggedInUsername();
-            if(!username.empty()){
+            if (!username.empty()) {
                 districtManager.printNeighbors(districtName);
             }
-            else{
-                cerr << "Permission Denied" << endl;
+            else {
+                throw runtime_error("Permission Denied");
             }
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
@@ -93,7 +96,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
                 userManager.assignDistrictToUser(username, districtName);  
                 cout << "OK" << endl;
             } else {
-                cerr << "Permission Denied" << endl;
+                throw runtime_error("Permission Denied");
             }
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
@@ -103,16 +106,97 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
                 string userDistrict = userManager.getUserDistrict(username);
+                if (userDistrict.empty()) { 
+                    throw runtime_error("Not Found");
+                }
                 restaurantManager.getRestaurantsByProximity(userDistrict);
             } else {
-                cerr << "Permission Denied" << endl;
+               throw runtime_error("Permission Denied");
             }
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    }else {
+    } else if (regex_match(command, match, getRestaurantsByFoodPattern)) {
+        string foodName = match[1];
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                string userDistrict = userManager.getUserDistrict(username);
+                if (userDistrict.empty()) { 
+                    throw runtime_error("Not Found");
+                }
+                restaurantManager.getRestaurantsByFood(foodName);
+            } else {
+                throw runtime_error("Permission Denied");
+            }
+        } catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+        }
+    } else if (regex_match(command, match, restaurantDetailPattern)) {
+        string restaurantName = match[1];
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                try {
+                    Restaurant* restaurant = restaurantManager.findRestaurantByName(restaurantName);
+                    restaurant->printRestaurantDetails();
+                } catch (const runtime_error& e) {
+                    cerr << e.what() << endl;
+                }       
+            } else {
+                throw runtime_error("Permission Denied");
+            }
+        } catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+            }
+    } else if (regex_match(command, match, reservePatternWithFoods)) {
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                    string restaurantName = match[1];
+                    int tableId = stoi(match[2]);
+                    int startTime = stoi(match[3]);
+                    int endTime = stoi(match[4]);
+                    vector<string> orderedFoods;
+                    if (match[5].matched) {
+                        string foodsStr = match[5];
+                        istringstream ss(foodsStr);
+                        string food;
+                        while (getline(ss, food, ',')) {
+                            orderedFoods.push_back(food);
+                            }
+                    }
+                try {
+                    restaurantManager.reserveTable(restaurantName, tableId, startTime, endTime, username, orderedFoods);
+                } catch (const runtime_error& e) {
+                    cerr << e.what() <<endl;
+                }
+            }else {
+                throw runtime_error("Permission Denied");
+            }  
+        }catch (const runtime_error& e) {
+        cerr << e.what() << endl;
+        }
+    } else if (regex_match(command, match, reservesPattern)) {
+        try {
+            string username = userManager.getLoggedInUsername();
+            if (!username.empty()) {
+                    string restaurantName = match[1];
+                    string reserveId = match[2].matched ? match[2] : "";
+                try {
+                    restaurantManager.showUserReservations(username, restaurantName, reserveId);
+                } catch (const runtime_error& e) {
+                    cerr << e.what() <<endl;
+                    }
+            }else {
+                throw runtime_error("Permission Denied");
+            }  
+        }catch (const runtime_error& e) {
+        cerr << e.what() << endl;
+        }
+    }else{
         cout << "Invalid command format" << endl;
-    }
+        }
 }
 
 int main(int argc, char* argv[]) {
@@ -136,7 +220,7 @@ int main(int argc, char* argv[]) {
     while (getline(cin, command)) {
         try {
             processCommand(command, userManager, districtManager, restaurantManager);
-        } catch (const BadRequestException& e) {
+        } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
     }
@@ -144,36 +228,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-// try {
-//         districtManager.loadFromCSV(CSV_PATH +"districts.csv");
-//         districtManager.printAllDistricts();
-        
-//         if (districtManager.isDistrictExists("Tajrish")) {
-//             cout << "District 'Tajrish' exists." << endl;
-//         } else {
-//             cout << "District 'Tajrish' does not exist." << endl;
-//         }
-//     } catch (const exception& e) {
-//         cerr << "Error: " << e.what() << endl;
-//     }
 /*
-int main() {
-    UserManager userManager;
-
-    // افزودن کاربران به `userManager`
-    User user1;
-    userManager.addUser("john", user1);
-
-    try {
-        // تنظیم ناحیه برای کاربر
-        userManager.setDistrictUser("john", "Tajrish");
-        cout << "District set successfully." << endl;
-    } catch (const exception& e) {
-        cerr << e.what() << endl;
-    }
-
-    return 0;
-}
 
 POST signup ? username "low_mist" password "meoow"
 POST login ? username "low_mist" password "meoow"
@@ -195,17 +250,23 @@ PUT my_district ? district "Tajrish"
 PUT my_district ? district "Omid Town"
 
 GET restaurants ?
+GET restaurants ? food_name "Kir"
+
+GET restaurant_detail ? restaurant_name "Nofel Loshato"
+GET restaurant_detail ? restaurant_name "Na Koja Abad"
+GET restaurant_detail ? restaurant_name "Apadana"
+
+GET restaurants ? food_name "Sushi"
 
 
+POST reserve ? restaurant_name "Chicken Family" table_id "1"
+start_time "15" end_time "17" foods "Sib Zamini,Sokhari"
+
+POST reserve ? restaurant_name "Nofel Loshato" table_id "2" start_time "14" end_time "15"
+POST reserve ? restaurant_name "Nofel Loshato" table_id "1" start_time "18" end_time "19" foods "brger,szar"
 
 
-
-
-
-
-
-
-
+POST reserve ? restaurant_name "Apadana" table_id "1" start_time "10" end_time "11" foods "Noodles,Pizza"
 
 
 */
