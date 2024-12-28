@@ -21,28 +21,28 @@ Restaurant::Restaurant(const string& name, const string& district, const string&
     }
 }
 
+string Restaurant::getName() const { return name; }
+
+string Restaurant::getDistrict() const { return district; }
+
+map<string, string> Restaurant::getFoods() const { return foods; }
+
 map<int, tuple<int, int, int, vector<pair<string, int>>>> Restaurant::getUserReservations(const string& username) const {
     map<int, tuple<int, int, int, vector<pair<string, int>>>> userReservations;
 
     for (const auto& [id, details] : reservations) {
-        if (get<0>(details) == username) { // بررسی نام کاربر
+        if (get<0>(details) == username) {  
             userReservations[id] = {
-                get<1>(details),        // شماره میز
-                get<2>(details),        // زمان شروع
-                get<3>(details),        // زمان پایان
-                get<4>(details)         // لیست غذاها
+                get<1>(details), 
+                get<2>(details), 
+                get<3>(details), 
+                get<4>(details) 
             };
         }
     }
 
     return userReservations;
 }
-
-string Restaurant::getName() const { return name; }
-
-string Restaurant::getDistrict() const { return district; }
-
-map<string, string> Restaurant::getFoods() const { return foods; }
 
 void Restaurant::printRestaurantDetails() const {
     cout << "Name: " << name << endl;
@@ -59,11 +59,17 @@ void Restaurant::printRestaurantDetails() const {
         }
     }
     cout << endl;
+
     for (const auto& [tableNumber, reservations] : tables) {
+        vector<pair<int, int>> sortedReservations = reservations;
+        sort(sortedReservations.begin(), sortedReservations.end(), [](const pair<int, int>& a, const pair<int, int>& b) {
+            return a.first < b.first;
+        });
+
         cout << tableNumber << ": ";
-        for (size_t i = 0; i < reservations.size(); ++i) {
-            cout << "(" << reservations[i].first << "-" << reservations[i].second << ")";
-            if (i != reservations.size() - 1) {
+        for (size_t i = 0; i < sortedReservations.size(); ++i) {
+            cout << "(" << sortedReservations[i].first << "-" << sortedReservations[i].second << ")";
+            if (i != sortedReservations.size() - 1) {
                 cout << ", ";
             }
         }
@@ -90,8 +96,6 @@ bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) co
 }
 
 int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
-    static int nextReserveId = 1;
-
     if (!isTableAvailable(tableId)) {
         throw runtime_error("Not Found: Table does not exist");
     }
@@ -99,10 +103,11 @@ int Restaurant::addReservation(int tableId, int startTime, int endTime, const st
         throw runtime_error("Permission Denied: Time slot is not available");
     }
 
-    
     tables[tableId].emplace_back(startTime, endTime);
-    reservations[nextReserveId++] = make_tuple(username, tableId, startTime, endTime, orderedFoods);
-    return nextReserveId - 1;
+
+    reservations[nextReserveId] = make_tuple(username, tableId, startTime, endTime, orderedFoods);
+
+    return nextReserveId++;
 }
 
 bool Restaurant::isReservationExists(int reserveId) const {
@@ -118,7 +123,7 @@ bool Restaurant::isReservationOwnedByUser(int reserveId, const string& username)
 void Restaurant::removeReservation(int reserveId) {
     auto it = reservations.find(reserveId);
     if (it == reservations.end()) {
-        throw runtime_error("Not Found: Reservation does not exist");  //؟؟
+        throw runtime_error("Not Found");  
     }
 
     int tableId = get<1>(it->second);
@@ -133,4 +138,3 @@ void Restaurant::removeReservation(int reserveId) {
 
     reservations.erase(it);
 }
-

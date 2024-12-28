@@ -25,7 +25,7 @@ void User::addReservation(string reservation) {
 
 void User::showReservations() {
     if (reservations.empty()) {
-        cout << "No reservations found." << endl;
+        cout << "Not Found" << endl;
     } else {
         for (const auto& res : reservations) {
             cout << res << endl;
@@ -40,7 +40,6 @@ void User::updateDistrict(const string& district) {
         throw runtime_error("Not Found");
     }
 }
-
 
 string User::getUsername() const { return username; }
 

@@ -1,15 +1,12 @@
 #include "RestaurantManager.hpp"
 #include "Restaurant.hpp"
-#include <memory>
-#include<set>
+#include "UserManager.hpp"
+
 
 using namespace std;
 
 void RestaurantManager::loadRestaurantsFromCSV(const string& filename) {
     ifstream file(filename);
-    if (!file.is_open()) {
-        throw runtime_error("Could not open the file!");
-    }
 
     string line;
     getline(file, line);
@@ -36,11 +33,10 @@ void RestaurantManager::loadRestaurantsFromCSV(const string& filename) {
 
 void RestaurantManager::getRestaurantsByProximity(const string& userDistrict) {
     if (restaurants.empty()) {
-        cout << "No restaurants loaded." << endl;
+        cout << "Empty" << endl;
         return;
     }
 
-    // Initialize BFS queue and visited set
     queue<string> districts;
     districts.push(userDistrict);
 
@@ -48,29 +44,24 @@ void RestaurantManager::getRestaurantsByProximity(const string& userDistrict) {
     visitedDistricts.insert(userDistrict);
 
     vector<Restaurant> allRestaurants;
-    vector<Restaurant> unvisitedRestaurants;  // Stores restaurants that are not in any neighborhood
+    vector<Restaurant> unvisitedRestaurants;
 
     while (!districts.empty()) {
         string currentDistrict = districts.front();
         districts.pop();
 
-        // Collect restaurants for the current district
         vector<Restaurant> filteredRestaurants;
         for (auto& restaurant : restaurants) {
             if (restaurant && restaurant->getDistrict() == currentDistrict) {
-                filteredRestaurants.push_back(*restaurant);  // Deselect restaurant pointer
+                filteredRestaurants.push_back(*restaurant);
             }
         }
-
-        // Sort filtered restaurants alphabetically
         sort(filteredRestaurants.begin(), filteredRestaurants.end(), [](const Restaurant& a, const Restaurant& b) {
             return a.getName() < b.getName();
         });
 
-        // Add the filtered restaurants to the result list
         allRestaurants.insert(allRestaurants.end(), filteredRestaurants.begin(), filteredRestaurants.end());
 
-        // Find neighboring districts and push them to the queue
         vector<string> nextDistricts = districtManager.getNeighbors(currentDistrict);
         for (auto& nextDistrict : nextDistricts) {
             if (visitedDistricts.find(nextDistrict) == visitedDistricts.end()) {
@@ -80,26 +71,20 @@ void RestaurantManager::getRestaurantsByProximity(const string& userDistrict) {
         }
     }
 
-    // Check and collect any restaurants that are not in any of the visited districts
     for (auto& restaurant : restaurants) {
         if (visitedDistricts.find(restaurant->getDistrict()) == visitedDistricts.end()) {
             unvisitedRestaurants.push_back(*restaurant);
         }
     }
 
-    // Display all the collected restaurants
     if (allRestaurants.empty()) {
-        cout << "No restaurants found in the nearby districts." << endl;
     } else {
-        cout << "Restaurants in the nearby districts:\n";
         for (auto& restaurant : allRestaurants) {
             cout << restaurant.getName() << " (" << restaurant.getDistrict() << ")" << endl;
         }
     }
 
-    // Display the remaining unvisited restaurants (not in any neighbor districts)
     if (!unvisitedRestaurants.empty()) {
-        cout << "\nRestaurants not in any nearby districts:\n";
         sort(unvisitedRestaurants.begin(), unvisitedRestaurants.end(), [](const Restaurant& a, const Restaurant& b) {
             return a.getName() < b.getName();
         });
@@ -110,30 +95,75 @@ void RestaurantManager::getRestaurantsByProximity(const string& userDistrict) {
     }
 }
 
-void RestaurantManager::getRestaurantsByFood(const string& foodName) {
-    vector<Restaurant> filteredRestaurants;
+void RestaurantManager::getRestaurantsByFood(const string& foodName, const string& userDistrict) {
+    if (restaurants.empty()) {
+        cout << "Empty" << endl;
+        return;
+    }
 
-   for (auto& restaurant : restaurants) {
-    map<string, string> foods = restaurant->getFoods();
-        for (const auto& food : foods) {
-            if (food.first.find(foodName) != string::npos) {
-                filteredRestaurants.push_back(*restaurant);   
-                break;
+    queue<string> districts;
+    districts.push(userDistrict);
+
+    set<string> visitedDistricts;
+    visitedDistricts.insert(userDistrict);
+
+    vector<Restaurant> allRestaurants;
+    vector<Restaurant> unvisitedRestaurants;
+
+    while (!districts.empty()) {
+        string currentDistrict = districts.front();
+        districts.pop();
+
+        vector<Restaurant> filteredRestaurants;
+        for (auto& restaurant : restaurants) {
+            if (restaurant && restaurant->getDistrict() == currentDistrict) {
+                const auto& foods = restaurant->getFoods();
+                if (foods.find(foodName) != foods.end()) {
+                    filteredRestaurants.push_back(*restaurant);
+                }
+            }
+        }
+        sort(filteredRestaurants.begin(), filteredRestaurants.end(), [](const Restaurant& a, const Restaurant& b) {
+            return a.getName() < b.getName();
+        });
+
+        allRestaurants.insert(allRestaurants.end(), filteredRestaurants.begin(), filteredRestaurants.end());
+
+        vector<string> nextDistricts = districtManager.getNeighbors(currentDistrict);
+        for (auto& nextDistrict : nextDistricts) {
+            if (visitedDistricts.find(nextDistrict) == visitedDistricts.end()) {
+                districts.push(nextDistrict);
+                visitedDistricts.insert(nextDistrict);
             }
         }
     }
 
-    if (filteredRestaurants.empty()) {
-        cout << "Empty"<<endl;
+    for (auto& restaurant : restaurants) {
+        if (visitedDistricts.find(restaurant->getDistrict()) == visitedDistricts.end()) {
+            const auto& foods = restaurant->getFoods();
+            if (foods.find(foodName) != foods.end()) {
+                unvisitedRestaurants.push_back(*restaurant);
+            }
+        }
+    }
+
+    if (allRestaurants.empty() && unvisitedRestaurants.empty()) {
+        cout << "Empty" << endl;
         return;
     }
 
-    sort(filteredRestaurants.begin(), filteredRestaurants.end(), [](const Restaurant& a, const Restaurant& b) {
-        return a.getName() < b.getName();
-    });
-
-    for (auto& restaurant : filteredRestaurants) {
+    for (auto& restaurant : allRestaurants) {
         cout << restaurant.getName() << " (" << restaurant.getDistrict() << ")" << endl;
+    }
+
+    if (!unvisitedRestaurants.empty()) {
+        sort(unvisitedRestaurants.begin(), unvisitedRestaurants.end(), [](const Restaurant& a, const Restaurant& b) {
+            return a.getName() < b.getName();
+        });
+
+        for (auto& restaurant : unvisitedRestaurants) {
+            cout << restaurant.getName() << " (" << restaurant.getDistrict() << ")" << endl;
+        }
     }
 }
 
@@ -143,7 +173,7 @@ Restaurant* RestaurantManager::findRestaurantByName(const string& name) {
             return restaurant.get(); 
         }
     }
-    throw runtime_error("Not Found: Restaurant does not exist");
+    throw runtime_error("Not Found");
 }
 
 bool RestaurantManager::hasUserTimeConflict(const string& username, int startTime, int endTime) const {
@@ -152,7 +182,7 @@ bool RestaurantManager::hasUserTimeConflict(const string& username, int startTim
             for (const auto& [tableId, times] : restaurant->getAllReservations()) {
                 for (const auto& [reservedStart, reservedEnd] : times) {
                     if (!(endTime <= reservedStart || startTime >= reservedEnd)) {
-                        return true; // تداخل زمانی
+                        return true;
                     }
                 }
             }
@@ -180,19 +210,19 @@ bool RestaurantManager::isUserReservationConflict(const string& username, int st
 int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
-        throw runtime_error("Not Found: Restaurant does not exist");
+        throw runtime_error("Not Found");
     }
 
     if (!restaurant->isTableAvailable(tableId)) {
-        throw runtime_error("Not Found: Table does not exist");
+        throw runtime_error("Not Found");
     }
 
     if (!restaurant->isTimeSlotAvailable(tableId, startTime, endTime)) {
-        throw runtime_error("Permission Denied: Time slot not available");
+        throw runtime_error("Permission Denied");
     }
 
     if (isUserReservationConflict(username, startTime, endTime)) {
-        throw runtime_error("Permission Denied: User has a conflicting reservation");
+        throw runtime_error("Permission Denied");
     }
 
     int totalPrice = 0;
@@ -202,7 +232,7 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
         const auto& foods = restaurant->getFoods();
         auto it = foods.find(foodName);
         if (it == foods.end()) {
-            throw runtime_error("Not Found: Food '" + foodName + "' not available in the restaurant");
+            throw runtime_error("Not Found");
         }
         totalPrice += stoi(it->second) * count;
         validFoods.emplace_back(foodName, count);
@@ -217,7 +247,6 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
     return reserveId;
 }
 
-
 void RestaurantManager::showAllUserReservations(const string& username) {
     vector<tuple<int, string, int, int, int, vector<pair<string, int>>>> reservations;
 
@@ -228,29 +257,27 @@ void RestaurantManager::showAllUserReservations(const string& username) {
             int tableId = get<0>(details);
             int startTime = get<1>(details);
             int endTime = get<2>(details);
-            const auto& foods = get<3>(details); // غذاها و تعدادشان
+            const auto& foods = get<3>(details);
 
             reservations.emplace_back(
-                id,                         // int: شناسه رزرو
-                restaurant->getName(),      // string: نام رستوران
-                tableId,                    // int: شماره میز
-                startTime,                  // int: زمان شروع
-                endTime,                    // int: زمان پایان
-                foods                       // vector<pair<string, int>>: غذاها و تعداد
+                id,
+                restaurant->getName(),
+                tableId,
+                startTime,
+                endTime,
+                foods
             );
         }
     }
 
     if (reservations.empty()) {
-        throw runtime_error("Not Found: No reservations found for this user");
+        throw runtime_error("Empty");
     }
 
-    // مرتب‌سازی رزروها بر اساس زمان شروع
     sort(reservations.begin(), reservations.end(), [](const auto& a, const auto& b) {
-        return get<3>(a) < get<3>(b); // مقایسه زمان شروع
+        return get<0>(a) < get<0>(b); 
     });
 
-    // نمایش رزروها
     for (const auto& [id, restaurant, tableId, startTime, endTime, foods] : reservations) {
         cout << id << ": " << restaurant << " " << tableId << " " << startTime << "-" << endTime;
 
@@ -263,16 +290,16 @@ void RestaurantManager::showAllUserReservations(const string& username) {
         cout << endl;
     }
 }
+
 void RestaurantManager::showUserReservations(const string& username, const string& restaurantName) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
-        throw runtime_error("Not Found: Restaurant does not exist");
+        throw runtime_error("Not Found");
     }
 
-    // دریافت رزروهای کاربر برای این رستوران
     const auto& userReservations = restaurant->getUserReservations(username);
     if (userReservations.empty()) {
-        throw runtime_error("Not Found: No reservations found for this user in the restaurant");
+        throw runtime_error("Empty");
     }
 
     for (const auto& [id, details] : userReservations) {
@@ -281,10 +308,8 @@ void RestaurantManager::showUserReservations(const string& username, const strin
         int endTime = get<2>(details);
         const auto& foods = get<3>(details);
 
-        // چاپ اطلاعات رزرو
         cout << id << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
 
-        // چاپ غذاهای سفارش داده‌شده (در صورت وجود)
         if (!foods.empty()) {
             for (const auto& [foodName, count] : foods) {
                 cout << " " << foodName << "(" << count << ")";
@@ -294,34 +319,29 @@ void RestaurantManager::showUserReservations(const string& username, const strin
         cout << endl;
     }
 }
+
 void RestaurantManager::showUserReservationById(const string& username, const string& restaurantName, const string& reserveId) {
-    // یافتن رستوران
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
-        throw runtime_error("Not Found: Restaurant does not exist");
+        throw runtime_error("Not Found");
     }
 
-    // تبدیل شناسه رزرو از string به int
     int reservationId = stoi(reserveId);
 
-    // دریافت رزرو کاربر
     const auto& userReservations = restaurant->getUserReservations(username);
     auto it = userReservations.find(reservationId);
     if (it == userReservations.end()) {
-        throw runtime_error("Not Found: Reservation ID not found for this user in the specified restaurant");
+        throw runtime_error("Permission Denied");
     }
 
-    // استخراج اطلاعات رزرو
     const auto& details = it->second;
     int tableId = get<0>(details);
     int startTime = get<1>(details);
     int endTime = get<2>(details);
     const auto& foods = get<3>(details);
 
-    // نمایش اطلاعات رزرو
     cout << reservationId << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
 
-    // نمایش غذاهای سفارش داده‌شده
     if (!foods.empty()) {
         for (const auto& [foodName, count] : foods) {
             cout << " " << foodName << "(" << count << ")";
@@ -330,37 +350,22 @@ void RestaurantManager::showUserReservationById(const string& username, const st
 
     cout << endl;
 }
+
 void RestaurantManager::deleteReservation(const string& username, const string& restaurantName, int reserveId) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
-        throw runtime_error("Not Found: Restaurant does not exist");
+        throw runtime_error("Not Found");
     }
 
     if (!restaurant->isReservationExists(reserveId)) {
-        throw runtime_error("Not Found: Reservation does not exist");
+        throw runtime_error("Not Found");
     }
 
     if (!restaurant->isReservationOwnedByUser(reserveId, username)) {
-        throw runtime_error("Permission Denied: Reservation does not belong to the user");
+        throw runtime_error("Permission Denied");
     }
 
     restaurant->removeReservation(reserveId);
 
-    cout << "Reservation " << reserveId << " in " << restaurantName << " deleted successfully." << endl;
+    cout << "OK "<<endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

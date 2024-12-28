@@ -3,38 +3,18 @@
 #include "DistrictManager.hpp"
 #include "RestaurantManager.hpp"
 
-void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager, RestaurantManager& restaurantManager) {
 
-    const string validMethods[] = {"GET", "POST", "PUT", "DELETE"};
-    bool isValid = false;
+void loadFils(const string& restaurantsFilePath,const string& districtsFilePath, DistrictManager& districtManager, RestaurantManager& restaurantManager){
 
-    for (const auto& method : validMethods) {
-        if (command.find(method) == 0) {
-            isValid = true;
-            break;
-        }
-    }
-    if (!isValid) {
-        throw runtime_error("Bad Request");
-    }
+    string restaurantsFile = CSV_PATH + restaurantsFilePath; 
+    string districtsFile = CSV_PATH + districtsFilePath;  
+    restaurantManager.loadRestaurantsFromCSV(restaurantsFile);
+    districtManager.loadFromCSV(districtsFile);
+}
 
-    regex signupPattern(R"(^POST\s+signup\s+\?\s+username\s+\"([a-zA-Z0-9_]+)\"\s+password\s+\"([a-zA-Z0-9_]+)\"$)");
-    regex loginPattern(R"(^POST\s+login\s+\?\s+username\s+\"([a-zA-Z0-9_]+)\"\s+password\s+\"([a-zA-Z0-9_]+)\"$)");
-    regex logoutPattern(R"(^POST\s+logout\s+\?$)");
-    regex districtsPattern(R"(^GET\s+districts\s+\?$)");
-    regex districtDetailPattern(R"(^GET\s+districts\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
-    regex putDistrictPattern(R"(^PUT\s+my_district\s+\?\s+district\s+\"([a-zA-Z0-9_ ]+)\"$)");
-    regex getRestaurantsPattern(R"(^GET\s+restaurants\s+\?$)");
-    regex getRestaurantsByFoodPattern(R"(^GET\s+restaurants\s+\?\s+food_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
-    regex restaurantDetailPattern(R"(^GET\s+restaurant_detail\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"$)");
-    regex reservePatternWithFoods(R"(^POST\s+reserve\s+\?\s+restaurant_name\s+\"([a-zA-Z0-9_ ]+)\"\s+table_id\s+\"([0-9]+)\"\s+start_time\s+\"([0-9]+)\"\s+end_time\s+\"([0-9]+)\"\s*(?:foods\s+\"([a-zA-Z0-9_, ]*)\")?$)");
-    regex reservesPattern(R"(^GET\s+reserves\s*\?$)");
-    regex reservesWithDetailPattern(R"(^GET\s+reserves\s*(?:\?\s*restaurant_name\s+\"([^\"]+)\"\s*(?:reserve_id\s+\"([^\"]+)\")?)?\s*$)");
-    regex deleteReservePattern(R"(^DELETE\s+reserve\s+\?\s+restaurant_name\s+\"([^\"]+)\"\s+reserve_id\s+\"([^\"]+)\"$)");
-
-    smatch match;
-
-    if (regex_match(command, match, signupPattern)) {
+void commandHandler(const string& command,UserManager& userManager,DistrictManager& districtManager, RestaurantManager& restaurantManager){
+  smatch match;
+    if (regex_match(command, match, regexPatterns.at("signup"))) {
         string username = match[1];
         string password = match[2];
 
@@ -44,7 +24,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, loginPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("login"))) {
         string username = match[1];
         string password = match[2];
 
@@ -54,14 +34,14 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, logoutPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("logout"))) {
         try {
             string result = userManager.logout();
             cout << result << endl;
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, districtsPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("districts"))) {
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -73,7 +53,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, districtDetailPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("districtDetail"))) {
         string districtName = match[1];
 
         try {
@@ -87,7 +67,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, putDistrictPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("putDistrict"))) {
         string districtName = match[1];
         try {
             string username = userManager.getLoggedInUsername();
@@ -100,7 +80,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, getRestaurantsPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("getRestaurants"))) {
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -115,7 +95,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, getRestaurantsByFoodPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("getRestaurantsByFood"))) {
         string foodName = match[1];
         try {
             string username = userManager.getLoggedInUsername();
@@ -124,14 +104,14 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
                 if (userDistrict.empty()) { 
                     throw runtime_error("Not Found");
                 }
-                restaurantManager.getRestaurantsByFood(foodName);
+                restaurantManager.getRestaurantsByFood(foodName,userDistrict);
             } else {
                 throw runtime_error("Permission Denied");
             }
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, restaurantDetailPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("restaurantDetail"))) {
         string restaurantName = match[1];
         try {
             string username = userManager.getLoggedInUsername();
@@ -148,7 +128,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
             }
-    } else if (regex_match(command, match, reservePatternWithFoods)) {
+    } else if (regex_match(command, match, regexPatterns.at("reserveWithFoods"))) {
         try {
            string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -183,7 +163,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, reservesPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("reserves"))) {
        try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -194,7 +174,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }  
-    } else if (regex_match(command, match, reservesWithDetailPattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("reservesWithDetail"))) {
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -214,7 +194,7 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, deleteReservePattern)) {
+    } else if (regex_match(command, match, regexPatterns.at("deleteReserve"))) {
         try {
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
@@ -227,28 +207,37 @@ void processCommand(const string& command, UserManager& userManager, DistrictMan
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else{
-        cout << "Invalid commandی format" << endl;
+    } else if (regex_match(command, match, regexPatterns.at("BadRequest"))) {
+       throw runtime_error("Bad Request");
+    }else{
+        cout << "Not Found" << endl;
     }
 }
 
-int main(int argc, char* argv[]) {
-    
-    string restaurantsFile = CSV_PATH + argv[1]; 
-    string districtsFile = CSV_PATH + argv[2];  
+void processCommand(const string& command, UserManager& userManager, DistrictManager& districtManager, RestaurantManager& restaurantManager) {
 
+    const string validMethods[] = {"GET", "POST", "PUT", "DELETE"};
+    bool isValid = false;
+
+    for (const auto& method : validMethods) {
+        if (command.find(method) == 0) {
+            isValid = true;
+            break;
+        }
+    }
+    if (!isValid) {
+        throw runtime_error("Bad Request");
+    }
+    commandHandler(command,userManager,districtManager,restaurantManager);
+}
+
+int main(int argc, char* argv[]) {
     string command;
     UserManager userManager;
     DistrictManager districtManager;
-    RestaurantManager restaurantManager(districtManager);
+    RestaurantManager restaurantManager(districtManager); 
 
-    try {
-        restaurantManager.loadRestaurantsFromCSV(restaurantsFile);
-        districtManager.loadFromCSV(districtsFile);
-    } catch (const exception& e) {
-        cerr << "Error loading CSV files: " << e.what() << endl;
-        return 1;
-    }
+    loadFils(argv[1],argv[2],districtManager,restaurantManager);
 
     while (getline(cin, command)) {
         try {
@@ -257,56 +246,5 @@ int main(int argc, char* argv[]) {
             cerr << e.what() << endl;
         }
     }
-
     return 0;
 }
-
-/*
-
-POST signup ? username "low_mist" password "meoow"
-POST login ? username "low_mist" password "meoow"
-
-POST signup ? username "amir" password "amiramir"
-POST login ? username "amir" password "amiramir"
-
-POST signup ? username "mmd" password "mmmli"
-POST login ? username "mmd" password "mmmli"
-
-POST logout ?
-
-
-GET districts ? district "Saadat Abad"
-GET districts ? district "Omid Town"
-
-GET districts ?
-PUT my_district ? district "Tajrish"
-PUT my_district ? district "Omid Town"
-
-GET restaurants ?
-GET restaurants ? food_name "Kir"
-
-GET restaurant_detail ? restaurant_name "Nofel Loshato"
-GET restaurant_detail ? restaurant_name "Na Koja Abad"
-GET restaurant_detail ? restaurant_name "Apadana"
-
-GET restaurants ? food_name "Sushi"
-
-
-POST reserve ? restaurant_name "Chicken Family" table_id "1"
-start_time "15" end_time "17" foods "Sib Zamini,Sokhari"
-
-POST reserve ? restaurant_name "Nofel Loshato" table_id "1" start_time "22" end_time "23" foods "sezar"
-POST reserve ? restaurant_name "Nofel Loshato" table_id "2" start_time "15" end_time "17" foods "sezar"
-POST reserve ? restaurant_name "Nofel Loshato" table_id "3" start_time "17" end_time "18" foods "Kabab Barg,Kabab Barg"
-
-POST reserve ? restaurant_name "Apadana" table_id "1" start_time "12" end_time "14" foods "Noodles,Pizza"
-
-GET reserves ?
-
-GET reserves ? restaurant_name "Nofel Loshato"
-
-GET reserves ? restaurant_name "Nofel Loshato" reserve_id "2"
-
-DELETE reserve ? restaurant_name "Nofel Loshato" reserve_id "3"
-
-*/

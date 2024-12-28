@@ -1,17 +1,10 @@
 #include "DistrictManager.hpp"
-#include <sstream>
-#include <fstream>
-#include <map>
-#include <vector>
-#include <string>
-#include <iostream>
+
 using namespace std;
 
 void DistrictManager::loadFromCSV(const string& filePath) {
     ifstream file(filePath);
-    if (!file.is_open()) {
-        throw runtime_error("Could not open file");
-    }
+   
     string line;
     getline(file, line);
     while (getline(file, line)) {
@@ -41,7 +34,7 @@ vector<string> DistrictManager::getNeighbors(const string& districtName) const {
 
 void DistrictManager::printAllDistricts() const {
     if (districts.empty()) {
-        throw runtime_error("District list is empty.");
+        throw runtime_error("Empty");
     }
 
     for (auto it = districts.begin(); it != districts.end(); ++it) {

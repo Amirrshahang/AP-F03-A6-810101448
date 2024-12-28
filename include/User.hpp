@@ -15,12 +15,12 @@ private:
 public:
     User();
     User(string uname, string pwd, DistrictManager* dm); 
-    bool login(string uname, string pwd);
     void logout();
-    void updateDistrict(const string& district);
-    void addReservation(string reservation);
     void showReservations();
-    string getUsername() const;
     bool isLoggedIn() const;
     string getDistrict() const;
+    string getUsername() const;
+    bool login(string uname, string pwd);
+    void addReservation(string reservation);
+    void updateDistrict(const string& district);
 };

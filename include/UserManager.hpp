@@ -4,7 +4,7 @@
 #include <string>
 #include <optional>
 #include "User.hpp"
-#include "DistrictManager.hpp" // اضافه کردن مرجع به DistrictManager
+#include "DistrictManager.hpp"
 
 class UserManager {
 private:
@@ -12,13 +12,14 @@ private:
     optional<string> loggedInUser;    
 
 public:
-    string signup(const string& username, const string& password, DistrictManager& districtManager); // تغییر در ورودی
     string login(const string& username, const string& password);
     string logout();
     bool isLoggedIn() const;
+    void printAllUsers() const;
+    string getLoggedInUsername() const;
     bool userExists(const string& username) const;
     string getUserDistrict(const string& username) const;
-    void assignDistrictToUser(const string& username, const string& district); // تغییر در ورودی
-    string getLoggedInUsername() const;
-    void printAllUsers() const;
+    void assignDistrictToUser(const string& username, const string& district);
+    string signup(const string& username, const string& password, DistrictManager& districtManager);
+
 };
