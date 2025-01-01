@@ -85,3 +85,6 @@ double UserManager::getUserWallet(const string& username) const {
     return users.at(username).getWallet();
 }
 
+bool UserManager::decreaseWallet(const string& username, int amount) {
+    return users[username].decreaseWallet(amount);
+}

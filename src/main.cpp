@@ -159,7 +159,7 @@ void commandHandler(const string& command,UserManager& userManager,DistrictManag
                     }
                 }
                 try {
-                    restaurantManager.reserveTable(restaurantName, tableId, startTime, endTime, username, orderedFoods);
+                    restaurantManager.reserveTable(restaurantName, tableId, startTime, endTime, username, orderedFoods,userManager);
                 } catch (const runtime_error& e) {
                     cerr << e.what() << endl;
                 }
@@ -299,7 +299,7 @@ int main(int argc, char* argv[]) {
 /*
 
 POST signup ? username "low_mist" password "meow"
-POST increase_budget ? amount 15000
+POST increase_budget ? amount 150000
 POST increase_budget ? amount -15000
 
 PUT my_district ? district "Tajrish"
@@ -314,7 +314,11 @@ GET restaurant_detail ? restaurant_name "Nofel Loshato"
 
 
 POST signup ? username "low_mist" password "meow"
+
 GET restaurant_detail ? restaurant_name "Nofel Loshato"
+POST signup ? username "low_mist" password "meow"
+POST reserve ? restaurant_name "Nofel Loshato" table_id "1" start_time "22" end_time "23" foods "sezar"
+
 
 
 

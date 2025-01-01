@@ -141,20 +141,20 @@ bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) co
     return true;
 }
 
+
 int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
     if (!isTableAvailable(tableId)) {
-        throw runtime_error("Not Found: Table does not exist");
+        throw runtime_error("Not Found");
     }
     if (!isTimeSlotAvailable(tableId, startTime, endTime)) {
-        throw runtime_error("Permission Denied: Time slot is not available");
+        throw runtime_error("Permission Denied");
     }
 
     tables[tableId].emplace_back(startTime, endTime);
-
     reservations[nextReserveId] = make_tuple(username, tableId, startTime, endTime, orderedFoods);
-
     return nextReserveId++;
 }
+
 
 bool Restaurant::isReservationExists(int reserveId) const {
     return reservations.find(reserveId) != reservations.end();

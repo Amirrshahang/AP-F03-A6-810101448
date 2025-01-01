@@ -21,6 +21,7 @@ public:
     double getUserWallet(const string& username) const;
     string getUserDistrict(const string& username) const;
     void increaseWallet(const string& username, int amount);
+    bool decreaseWallet(const string& username, int amount);
     void assignDistrictToUser(const string& username, const string& district);
     string signup(const string& username, const string& password, DistrictManager& districtManager);
 

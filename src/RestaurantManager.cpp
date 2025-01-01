@@ -1,4 +1,5 @@
 #include "RestaurantManager.hpp"
+#include "DiscountPolicies.hpp"
 #include "Restaurant.hpp"
 #include "UserManager.hpp"
 
@@ -273,7 +274,8 @@ bool RestaurantManager::isUserReservationConflict(const string& username, int st
     return false;
 }
 
-int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
+
+int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods, UserManager& userManager) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
         throw runtime_error("Not Found");
@@ -304,14 +306,71 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
         validFoods.emplace_back(foodName, count);
     }
 
-    int reserveId = restaurant->addReservation(tableId, startTime, endTime, username, validFoods);
+    const Discount& discount = restaurant->getDiscount();
+    int totalDiscount = 0;
 
-    cout << "Reserve ID: " << reserveId << endl;
-    cout << "Table " << tableId << " for " << startTime << " to " << endTime << " in " << restaurantName << endl;
-    cout << "Price: " << totalPrice << endl;
+    ItemSpecificDiscount itemDisc(discount.foodDiscounts, validFoods);
+    int itemDiscount = itemDisc.calculateDiscount(totalPrice);
+    if (itemDiscount > 0) {
+        totalDiscount += itemDiscount;
+    }
+    int priceAfterItemDiscount = totalPrice - totalDiscount;
+
+    if (discount.firstOrderDiscount.has_value()) {
+        const auto& [type, value] = discount.firstOrderDiscount.value();
+        FirstOrderDiscount firstOrderDisc(type, value);
+        int discountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount);
+        if (discountValue > 0) {
+            totalDiscount += discountValue;
+            priceAfterItemDiscount -= discountValue;
+        }
+    }
+
+    if (discount.totalPriceDiscount.has_value()) {
+        const auto& [type, minimum, value] = discount.totalPriceDiscount.value();
+        TotalPriceDiscount totalPriceDisc(type, minimum, value);
+        int discountValue = totalPriceDisc.calculateDiscount(priceAfterItemDiscount);
+        if (priceAfterItemDiscount >= minimum && discountValue > 0) {
+            totalDiscount += discountValue;
+            priceAfterItemDiscount -= discountValue;
+        }
+    }
+
+    int finalPrice = max(0, priceAfterItemDiscount);
+
+
+    int reserveId = restaurant->addReservation(tableId, startTime, endTime, username, validFoods);
+    if (userManager.decreaseWallet(username, finalPrice)) {
+        cout << "Reserve ID: " << reserveId << endl;
+        cout << "Table " << tableId << " for " << startTime << " to " << endTime << " in " << restaurantName << endl;
+        cout << "Original Price: " << totalPrice << endl;
+        if (itemDiscount > 0) {
+            cout << "Total Item Specific Discount: " << itemDiscount << endl;
+        }
+
+        if (discount.totalPriceDiscount.has_value()) {
+            const auto& [type, minimum, value] = discount.totalPriceDiscount.value();
+            TotalPriceDiscount totalPriceDisc(type, minimum, value);
+            int totalPriceDiscountValue = totalPriceDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount);
+            if (totalPriceDiscountValue > 0) {
+                cout << "Order Amount Discount: " << totalPriceDiscountValue << endl;
+            }
+        }
+
+        if (discount.firstOrderDiscount.has_value() && totalDiscount > itemDiscount) {
+            const auto& [type, value] = discount.firstOrderDiscount.value();
+            FirstOrderDiscount firstOrderDisc(type, value);
+            int firstOrderDiscountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount - itemDiscount);
+            cout << "First Order Discount: " << firstOrderDiscountValue << endl;
+        }
+        cout << "Total Price: " << finalPrice << endl;
+    }else{
+        throw runtime_error("Bad Request");
+    }
 
     return reserveId;
 }
+
 
 void RestaurantManager::showAllUserReservations(const string& username) {
     vector<tuple<int, string, int, int, int, vector<pair<string, int>>>> reservations;
@@ -367,8 +426,6 @@ void RestaurantManager::showUserReservations(const string& username, const strin
     if (userReservations.empty()) {
         throw runtime_error("Empty");
     }
-
-    const Discount& discount = restaurant->getDiscount();
 
     for (const auto& [id, details] : userReservations) {
         int tableId = get<0>(details);

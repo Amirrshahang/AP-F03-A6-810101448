@@ -60,12 +60,11 @@ void User::addToWallet(int amount) {
     cout << "OK" << endl;
 }
 
-void User::deductFromWallet(double amount) {
-    if (amount < 0) {
-        throw runtime_error("Invalid amount: Cannot deduct negative value from wallet");
+bool User::decreaseWallet(int amount) {
+    if (wallet >= amount) {
+        wallet -= amount;
+        return true;
     }
-    if (wallet < amount) {
-        throw runtime_error("Insufficient balance in wallet");
-    }
-    wallet -= amount;
+    return false;
 }
+
