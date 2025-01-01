@@ -3,6 +3,7 @@
 #include "DistrictManager.hpp"
 #include "Restaurant.hpp"
 #include "global.hpp"
+#include "Discount.hpp"
 
 class RestaurantManager {
 private:
@@ -13,6 +14,7 @@ public:
     RestaurantManager(DistrictManager& manager) : districtManager(manager) {} 
     Restaurant* getRestaurantByName(const string& name);
     Restaurant* findRestaurantByName(const string& name);
+    void loadDiscountsFromCSV(const string& filename);
     void loadRestaurantsFromCSV(const string& filename);
     void showAllUserReservations(const string& username);
     void getRestaurantsByProximity(const string& userDistrict);

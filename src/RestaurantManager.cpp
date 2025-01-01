@@ -5,6 +5,72 @@
 
 using namespace std;
 
+
+void RestaurantManager::loadDiscountsFromCSV(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        throw runtime_error("Failed to open discount file");
+    }
+
+    string line;
+    getline(file, line);
+    while (getline(file, line)) {
+        istringstream ss(line);
+        string restaurantName, totalDiscount, firstOrderDiscount, foodDiscounts;
+
+        getline(ss, restaurantName, ',');
+        getline(ss, totalDiscount, ',');
+        getline(ss, firstOrderDiscount, ',');
+        getline(ss, foodDiscounts, ',');
+
+        Restaurant* restaurant = findRestaurantByName(restaurantName);
+        if (!restaurant) {
+            continue;
+        }
+
+        Discount discount;
+
+        if (totalDiscount != "none") {
+            size_t firstDelimiter = totalDiscount.find(';');
+            size_t secondDelimiter = totalDiscount.rfind(';');
+            if (firstDelimiter != string::npos && secondDelimiter != string::npos && firstDelimiter != secondDelimiter) {
+                string type = totalDiscount.substr(0, firstDelimiter);
+                int minimum = stoi(totalDiscount.substr(firstDelimiter + 1, secondDelimiter - firstDelimiter - 1));
+                int value = stoi(totalDiscount.substr(secondDelimiter + 1));
+                discount.totalPriceDiscount = make_tuple(type, minimum, value);
+            }
+        }
+        if (firstOrderDiscount != "none") {
+            size_t delimiter = firstOrderDiscount.find(';');
+            if (delimiter != string::npos) {
+                string type = firstOrderDiscount.substr(0, delimiter);
+                int value = stoi(firstOrderDiscount.substr(delimiter + 1));
+                discount.firstOrderDiscount = make_pair(type, value);
+            }
+        }
+        if (foodDiscounts != "none") {
+            istringstream foodStream(foodDiscounts);
+            string foodEntry;
+            while (getline(foodStream, foodEntry, '|')) {
+                size_t firstDelimiter = foodEntry.find(';');
+                size_t secondDelimiter = foodEntry.find(':', firstDelimiter + 1);
+
+                if (firstDelimiter != string::npos && secondDelimiter != string::npos) {
+                    string type = foodEntry.substr(0, firstDelimiter);
+                    string foodName = foodEntry.substr(firstDelimiter + 1, secondDelimiter - firstDelimiter - 1);
+                    int value = stoi(foodEntry.substr(secondDelimiter + 1));
+                    discount.foodDiscounts[foodName] = make_pair(type, value);
+                }
+            }
+        }
+
+        restaurant->setDiscount(discount);
+    }
+
+    file.close();
+}
+
+
 void RestaurantManager::loadRestaurantsFromCSV(const string& filename) {
     ifstream file(filename);
 
@@ -173,7 +239,7 @@ Restaurant* RestaurantManager::findRestaurantByName(const string& name) {
             return restaurant.get(); 
         }
     }
-    throw runtime_error("Not Found");
+     return nullptr;
 }
 
 bool RestaurantManager::hasUserTimeConflict(const string& username, int startTime, int endTime) const {
@@ -302,6 +368,8 @@ void RestaurantManager::showUserReservations(const string& username, const strin
         throw runtime_error("Empty");
     }
 
+    const Discount& discount = restaurant->getDiscount();
+
     for (const auto& [id, details] : userReservations) {
         int tableId = get<0>(details);
         int startTime = get<1>(details);
@@ -315,10 +383,10 @@ void RestaurantManager::showUserReservations(const string& username, const strin
                 cout << " " << foodName << "(" << count << ")";
             }
         }
-
         cout << endl;
     }
 }
+
 
 void RestaurantManager::showUserReservationById(const string& username, const string& restaurantName, const string& reserveId) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);

@@ -1,0 +1,5 @@
+restaurant_name,total_price_discount,first_order_discount,food_discount
+sib,percent;800;7,none,amount;burger:20|percent;pizza:50
+noodles_house,amount;1000;50,percent;20,percent;sushi:30|amount;ramen:15
+dream_pizza,none,percent;15,none
+Nofel Loshato,percent;1500;10,amount;500,percent;Kabab Barg:25|amount;sezar:10

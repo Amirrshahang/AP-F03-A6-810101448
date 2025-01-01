@@ -77,3 +77,11 @@ void UserManager::printAllUsers() const {
         cout << " - " << pair.first << endl;
     }
 }
+
+void UserManager::increaseWallet(const string& username, int amount) {
+    users[username].addToWallet(amount);
+}
+double UserManager::getUserWallet(const string& username) const {
+    return users.at(username).getWallet();
+}
+

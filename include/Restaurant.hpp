@@ -1,5 +1,6 @@
 #pragma once
 #include "global.hpp"
+#include "Discount.hpp"
 
 #include <string>
 #include <map>
@@ -7,7 +8,7 @@
 #include <tuple>
 #include <utility>
 
-using namespace std;
+
 
 class Restaurant {
 private:
@@ -20,6 +21,7 @@ private:
     map<string, string> foods;
     map<int, vector<pair<int, int>>> tables;
     map<int, tuple<string, int, int, int, vector<pair<string, int>>>> reservations;
+    Discount discount;
 
 public:
     Restaurant(const string& name, const string& district, const string& foods, const string& opening_time, const string& closing_time, const string& number_of_tables);
@@ -29,7 +31,8 @@ public:
     map<string, string> getFoods() const;
     map<int, vector<pair<int, int>>> getAllReservations() const;
     map<int, tuple<int, int, int, vector<pair<string, int>>>> getUserReservations(const string& username) const;
-
+    void setDiscount(const Discount& discount);
+    const Discount& getDiscount() const;
     void printTables() const;  
     void printReservations() const;
     void printRestaurantDetails() const;

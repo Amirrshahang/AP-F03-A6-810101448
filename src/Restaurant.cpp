@@ -19,11 +19,26 @@ Restaurant::Restaurant(const string& name, const string& district, const string&
     for (int i = 1; i <= totalTables; ++i) {
         tables[i] = {};
     }
+
+    discount.totalPriceDiscount.reset();
+    discount.firstOrderDiscount.reset();
+    discount.foodDiscounts.clear();
 }
+
 
 string Restaurant::getName() const { return name; }
 
 string Restaurant::getDistrict() const { return district; }
+
+
+void Restaurant::setDiscount(const Discount& discountData) {
+    discount = discountData;
+}
+
+const Discount& Restaurant::getDiscount() const {
+    return discount;
+}
+
 
 map<string, string> Restaurant::getFoods() const { return foods; }
 
@@ -49,6 +64,7 @@ void Restaurant::printRestaurantDetails() const {
     cout << "District: " << district << endl;
     cout << "Time: " << opening_time << "-" << closing_time << endl;
     cout << "Menu: ";
+
     vector<pair<string, string>> sortedFoods(foods.begin(), foods.end());
     sort(sortedFoods.begin(), sortedFoods.end());
 
@@ -75,7 +91,37 @@ void Restaurant::printRestaurantDetails() const {
         }
         cout << endl;
     }
+
+    if (discount.totalPriceDiscount.has_value()) {
+        auto [type, minimum, value] = discount.totalPriceDiscount.value();
+        cout << "Order Amount Discount: " 
+             << (type == "percent" ? "percentage, " : "amount") << minimum <<", "<<value << endl;
+    }
+
+    if (!discount.foodDiscounts.empty()) {
+        cout << "Item Specific Discount: ";
+        bool isFirst = true;
+        for (const auto& [foodName, discountDetails] : discount.foodDiscounts) {
+            if (!isFirst) {
+                cout << ", ";
+            }
+            cout << foodName << "(" 
+                 << (discountDetails.first == "percent" ? "percentage" : "amount")
+                 << ": " << discountDetails.second << ")";
+            isFirst = false;
+        }
+        cout << endl;
+    }
+
+    if (discount.firstOrderDiscount.has_value()) {
+        auto [type, value] = discount.firstOrderDiscount.value();
+        cout << "First Order Discount: " 
+             << (type == "percent" ? "percentage" : "amount") << ", " << value << endl;
+    }
+    
 }
+
+
 
 bool Restaurant::isTableAvailable(int tableId) const {
     return tables.find(tableId) != tables.end();
@@ -138,3 +184,4 @@ void Restaurant::removeReservation(int reserveId) {
 
     reservations.erase(it);
 }
+

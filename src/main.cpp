@@ -4,16 +4,21 @@
 #include "RestaurantManager.hpp"
 
 
-void loadFils(const string& restaurantsFilePath,const string& districtsFilePath, DistrictManager& districtManager, RestaurantManager& restaurantManager){
-
+void loadFils(const string& restaurantsFilePath, const string& districtsFilePath, const string& discountsFilePath, DistrictManager& districtManager, RestaurantManager& restaurantManager) {
     string restaurantsFile = CSV_PATH + restaurantsFilePath; 
     string districtsFile = CSV_PATH + districtsFilePath;  
+    string discountsFile = CSV_PATH + discountsFilePath; 
+
     restaurantManager.loadRestaurantsFromCSV(restaurantsFile);
     districtManager.loadFromCSV(districtsFile);
+    restaurantManager.loadDiscountsFromCSV(discountsFile); 
+
 }
+
 
 void commandHandler(const string& command,UserManager& userManager,DistrictManager& districtManager, RestaurantManager& restaurantManager){
   smatch match;
+
     if (regex_match(command, match, regexPatterns.at("signup"))) {
         string username = match[1];
         string password = match[2];
@@ -111,9 +116,10 @@ void commandHandler(const string& command,UserManager& userManager,DistrictManag
         } catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, regexPatterns.at("restaurantDetail"))) {
+    } else if (regex_match(command, match, regexPatterns.at("showrestaurantDetail"))) {
         string restaurantName = match[1];
         try {
+
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
                 try {
@@ -163,8 +169,9 @@ void commandHandler(const string& command,UserManager& userManager,DistrictManag
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }
-    } else if (regex_match(command, match, regexPatterns.at("reserves"))) {
+    } else if (regex_match(command, match, regexPatterns.at("showreserves"))) {
        try {
+            
             string username = userManager.getLoggedInUsername();
             if (!username.empty()) {
                 restaurantManager.showAllUserReservations(username);
@@ -174,17 +181,17 @@ void commandHandler(const string& command,UserManager& userManager,DistrictManag
         }catch (const runtime_error& e) {
             cerr << e.what() << endl;
         }  
-    } else if (regex_match(command, match, regexPatterns.at("reservesWithDetail"))) {
+    } else if (regex_match(command, match, regexPatterns.at("showreservesWithDetail"))) {
         try {
             string username = userManager.getLoggedInUsername();
+            
             if (!username.empty()) {
-
                 string restaurantName = match[1].matched ? match[1].str() : ""; 
                 string reserveId = match[2].matched ? match[2].str() : "";
 
                 if (reserveId.empty()) {
                     restaurantManager.showUserReservations(username, restaurantName);
-
+                    
                 } else {
                     restaurantManager.showUserReservationById(username, restaurantName, reserveId);
                 }
@@ -209,6 +216,45 @@ void commandHandler(const string& command,UserManager& userManager,DistrictManag
         }
     } else if (regex_match(command, match, regexPatterns.at("BadRequest"))) {
        throw runtime_error("Bad Request");
+    } else if (regex_match(command, match, regexPatterns.at("increaseBudget"))) {
+        try{
+            string username = userManager.getLoggedInUsername();
+            if (username.empty()) {
+              throw runtime_error("Permission Denied");
+            }
+
+            size_t pos = command.find("amount");
+
+            string amountStr = command.substr(pos + AMOUNT_PREFIX_LENGTH);
+            amountStr = regex_replace(amountStr, regex("^\\s+|\\s+$"), "");
+
+            if (!regex_match(amountStr, numericPattern)) {
+                throw runtime_error("Bad Request");
+            }
+
+            int amount = stoi(amountStr);
+
+            if (amount < 0) {
+                throw runtime_error("Bad Request");
+            }
+            
+            userManager.increaseWallet(username, amount);
+
+        }catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+        }
+    } else if (regex_match(command, match, regexPatterns.at("showBudget"))) {
+        try{
+            string username = userManager.getLoggedInUsername();
+            if (username.empty()) {
+                  throw runtime_error("Permission Denied");
+                }
+            double walletBalance = userManager.getUserWallet(username);
+            cout  << walletBalance << endl;
+
+        } catch (const runtime_error& e) {
+            cerr << e.what() << endl;
+        }
     }else{
         cout << "Not Found" << endl;
     }
@@ -237,8 +283,7 @@ int main(int argc, char* argv[]) {
     DistrictManager districtManager;
     RestaurantManager restaurantManager(districtManager); 
 
-    loadFils(argv[1],argv[2],districtManager,restaurantManager);
-
+    loadFils(argv[1],argv[2],argv[3],districtManager,restaurantManager);
     while (getline(cin, command)) {
         try {
             processCommand(command, userManager, districtManager, restaurantManager);
@@ -248,3 +293,39 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
+
+
+
+/*
+
+POST signup ? username "low_mist" password "meow"
+POST increase_budget ? amount 15000
+POST increase_budget ? amount -15000
+
+PUT my_district ? district "Tajrish"
+
+
+POST increase_budget ? amount fj
+
+GET show_budget ?
+
+GET restaurant_detail ? restaurant_name "Nofel Loshato"
+
+
+
+POST signup ? username "low_mist" password "meow"
+GET restaurant_detail ? restaurant_name "Nofel Loshato"
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
