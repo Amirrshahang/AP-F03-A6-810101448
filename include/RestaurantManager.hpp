@@ -23,7 +23,7 @@ public:
     void showUserReservations(const string& username, const string& restaurantName);
     bool hasUserTimeConflict(const string& username, int startTime, int endTime) const;
     bool isUserReservationConflict(const string& username, int startTime, int endTime) const;
-    void deleteReservation(const string& username, const string& restaurantName, int reserveId);
+    void deleteReservation(const string& username, const string& restaurantName, int reserveId, UserManager& userManager);
     void showUserReservationById(const string& username, const string& restaurantName, const string& reserveId);
     int reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods, UserManager& userManager);
 

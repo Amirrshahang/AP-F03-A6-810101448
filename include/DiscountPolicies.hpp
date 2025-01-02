@@ -53,20 +53,15 @@ public:
     }
 };
 
-
-
 class ItemSpecificDiscount : public DiscountBase {
 private:
     map<string, pair<string, int>> itemDiscounts;
     vector<pair<string, int>> orderedFoods;
+    map<string, string> foodPrices;
 
 public:
-    ItemSpecificDiscount(const map<string, pair<string, int>>& itemDiscounts, const vector<pair<string, int>>& orderedFoods)
-        : itemDiscounts(itemDiscounts), orderedFoods(orderedFoods) {}
-    
-    int calculateValue(const string& type, int baseValue, int factor) const {
-        return (type == "percent") ? (baseValue * factor) / 100 : factor;
-    }  
+    ItemSpecificDiscount(const map<string, pair<string, int>>& itemDiscounts, const vector<pair<string, int>>& orderedFoods, const map<string, string>& foodPrices)
+        : itemDiscounts(itemDiscounts), orderedFoods(orderedFoods), foodPrices(foodPrices) {}
 
     int calculateDiscount(int originalPrice) const override {
         int totalDiscount = 0;
@@ -74,11 +69,17 @@ public:
             auto it = itemDiscounts.find(foodName);
             if (it != itemDiscounts.end()) {
                 const auto& [type, value] = it->second;
-                totalDiscount += calculateValue(type, originalPrice, value * count);
+
+                auto priceIt = foodPrices.find(foodName);
+                if (priceIt != foodPrices.end()) {
+                    int foodPrice = stoi(priceIt->second) * count;
+                    totalDiscount += (type == "percent") ? (foodPrice * value) / 100 : value * count;
+                }
             }
         }
         return totalDiscount;
     }
+
     string getDescription() const override {
         string description = "Item Specific Discounts: ";
         for (const auto& [foodName, discount] : itemDiscounts) {
@@ -87,3 +88,5 @@ public:
         return description;
     }
 };
+
+

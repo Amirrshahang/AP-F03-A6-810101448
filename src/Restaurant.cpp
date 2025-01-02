@@ -30,28 +30,26 @@ string Restaurant::getName() const { return name; }
 
 string Restaurant::getDistrict() const { return district; }
 
-
-void Restaurant::setDiscount(const Discount& discountData) {
-    discount = discountData;
-}
-
-const Discount& Restaurant::getDiscount() const {
-    return discount;
-}
-
-
 map<string, string> Restaurant::getFoods() const { return foods; }
 
-map<int, tuple<int, int, int, vector<pair<string, int>>>> Restaurant::getUserReservations(const string& username) const {
-    map<int, tuple<int, int, int, vector<pair<string, int>>>> userReservations;
+map<int, vector<pair<int, int>>> Restaurant::getAllReservations() const { return tables; }
+
+void Restaurant::setDiscount(const Discount& discountData) { discount = discountData; }
+
+const Discount& Restaurant::getDiscount() const { return discount; }
+
+map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> Restaurant::getUserReservations(const string& username) const {
+    map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> userReservations;
 
     for (const auto& [id, details] : reservations) {
-        if (get<0>(details) == username) {  
+        if (get<0>(details) == username) {
             userReservations[id] = {
-                get<1>(details), 
-                get<2>(details), 
-                get<3>(details), 
-                get<4>(details) 
+                get<1>(details),  
+                get<2>(details),
+                get<3>(details),
+                get<4>(details),
+                get<5>(details),
+                get<6>(details)
             };
         }
     }
@@ -117,18 +115,11 @@ void Restaurant::printRestaurantDetails() const {
         auto [type, value] = discount.firstOrderDiscount.value();
         cout << "First Order Discount: " 
              << (type == "percent" ? "percentage" : "amount") << ", " << value << endl;
-    }
-    
+    }    
 }
-
-
 
 bool Restaurant::isTableAvailable(int tableId) const {
     return tables.find(tableId) != tables.end();
-}
-
-map<int, vector<pair<int, int>>> Restaurant::getAllReservations() const {
-    return tables;
 }
 
 bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) const {
@@ -141,8 +132,7 @@ bool Restaurant::isTimeSlotAvailable(int tableId, int startTime, int endTime) co
     return true;
 }
 
-
-int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods) {
+int Restaurant::addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods, int totalPrice ,int finalPrice) {
     if (!isTableAvailable(tableId)) {
         throw runtime_error("Not Found");
     }
@@ -151,10 +141,9 @@ int Restaurant::addReservation(int tableId, int startTime, int endTime, const st
     }
 
     tables[tableId].emplace_back(startTime, endTime);
-    reservations[nextReserveId] = make_tuple(username, tableId, startTime, endTime, orderedFoods);
+    reservations[nextReserveId] = make_tuple(username, tableId, startTime, endTime, orderedFoods, totalPrice, finalPrice);
     return nextReserveId++;
 }
-
 
 bool Restaurant::isReservationExists(int reserveId) const {
     return reservations.find(reserveId) != reservations.end();
@@ -166,7 +155,7 @@ bool Restaurant::isReservationOwnedByUser(int reserveId, const string& username)
     return get<0>(it->second) == username;
 }
 
-void Restaurant::removeReservation(int reserveId) {
+void Restaurant::removeReservation(int reserveId, int& finalPrice) {
     auto it = reservations.find(reserveId);
     if (it == reservations.end()) {
         throw runtime_error("Not Found");  
@@ -175,7 +164,7 @@ void Restaurant::removeReservation(int reserveId) {
     int tableId = get<1>(it->second);
     int startTime = get<2>(it->second);
     int endTime = get<3>(it->second);
-
+    finalPrice = get<6>(it->second);
     auto& tableReservations = tables[tableId];
     tableReservations.erase(
         remove(tableReservations.begin(), tableReservations.end(), make_pair(startTime, endTime)),
@@ -184,4 +173,3 @@ void Restaurant::removeReservation(int reserveId) {
 
     reservations.erase(it);
 }
-

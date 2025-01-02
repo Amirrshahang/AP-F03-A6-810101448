@@ -6,7 +6,6 @@
 
 using namespace std;
 
-
 void RestaurantManager::loadDiscountsFromCSV(const string& filename) {
     ifstream file(filename);
     if (!file.is_open()) {
@@ -70,7 +69,6 @@ void RestaurantManager::loadDiscountsFromCSV(const string& filename) {
 
     file.close();
 }
-
 
 void RestaurantManager::loadRestaurantsFromCSV(const string& filename) {
     ifstream file(filename);
@@ -274,7 +272,6 @@ bool RestaurantManager::isUserReservationConflict(const string& username, int st
     return false;
 }
 
-
 int RestaurantManager::reserveTable(const string& restaurantName, int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods, UserManager& userManager) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
@@ -308,13 +305,12 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
 
     const Discount& discount = restaurant->getDiscount();
     int totalDiscount = 0;
-
-    ItemSpecificDiscount itemDisc(discount.foodDiscounts, validFoods);
+    ItemSpecificDiscount itemDisc(discount.foodDiscounts, validFoods, restaurant->getFoods());
     int itemDiscount = itemDisc.calculateDiscount(totalPrice);
     if (itemDiscount > 0) {
         totalDiscount += itemDiscount;
     }
-    int priceAfterItemDiscount = totalPrice - totalDiscount;
+    int priceAfterItemDiscount = totalPrice - itemDiscount;
 
     if (discount.firstOrderDiscount.has_value()) {
         const auto& [type, value] = discount.firstOrderDiscount.value();
@@ -337,33 +333,35 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
     }
 
     int finalPrice = max(0, priceAfterItemDiscount);
-
-
-    int reserveId = restaurant->addReservation(tableId, startTime, endTime, username, validFoods);
+    int reserveId;
     if (userManager.decreaseWallet(username, finalPrice)) {
+        reserveId = restaurant->addReservation(tableId, startTime, endTime, username, validFoods,totalPrice,finalPrice);
         cout << "Reserve ID: " << reserveId << endl;
         cout << "Table " << tableId << " for " << startTime << " to " << endTime << " in " << restaurantName << endl;
         cout << "Original Price: " << totalPrice << endl;
-        if (itemDiscount > 0) {
-            cout << "Total Item Specific Discount: " << itemDiscount << endl;
-        }
-
-        if (discount.totalPriceDiscount.has_value()) {
-            const auto& [type, minimum, value] = discount.totalPriceDiscount.value();
-            TotalPriceDiscount totalPriceDisc(type, minimum, value);
-            int totalPriceDiscountValue = totalPriceDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount);
-            if (totalPriceDiscountValue > 0) {
-                cout << "Order Amount Discount: " << totalPriceDiscountValue << endl;
+        if(totalPrice != 0){
+            if (itemDiscount > 0) {
+                cout << "Total Item Specific Discount: " << itemDiscount << endl;
             }
-        }
 
-        if (discount.firstOrderDiscount.has_value() && totalDiscount > itemDiscount) {
-            const auto& [type, value] = discount.firstOrderDiscount.value();
-            FirstOrderDiscount firstOrderDisc(type, value);
-            int firstOrderDiscountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount - itemDiscount);
-            cout << "First Order Discount: " << firstOrderDiscountValue << endl;
+            if (discount.totalPriceDiscount.has_value()) {
+                const auto& [type, minimum, value] = discount.totalPriceDiscount.value();
+                TotalPriceDiscount totalPriceDisc(type, minimum, value);
+                int totalPriceDiscountValue = totalPriceDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount);
+                if (totalPriceDiscountValue > 0) {
+                    cout << "Order Amount Discount: " << totalPriceDiscountValue << endl;
+                }
+            }
+
+            if (discount.firstOrderDiscount.has_value() && totalDiscount > itemDiscount) {
+                const auto& [type, value] = discount.firstOrderDiscount.value();
+                FirstOrderDiscount firstOrderDisc(type, value);
+                int firstOrderDiscountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount - itemDiscount);
+                cout << "First Order Discount: " << firstOrderDiscountValue << endl;
+            }
+            cout<<"Total Discount: "<< totalPrice - finalPrice <<endl;
+            cout << "Total Price: " << finalPrice << endl;
         }
-        cout << "Total Price: " << finalPrice << endl;
     }else{
         throw runtime_error("Bad Request");
     }
@@ -371,27 +369,21 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
     return reserveId;
 }
 
-
 void RestaurantManager::showAllUserReservations(const string& username) {
-    vector<tuple<int, string, int, int, int, vector<pair<string, int>>>> reservations;
+    vector<tuple<int, string, int, int, int, vector<pair<string, int>>, int, int>> reservations;
 
     for (const auto& restaurant : restaurants) {
         const auto& userReservations = restaurant->getUserReservations(username);
 
         for (const auto& [id, details] : userReservations) {
+
             int tableId = get<0>(details);
             int startTime = get<1>(details);
             int endTime = get<2>(details);
             const auto& foods = get<3>(details);
-
-            reservations.emplace_back(
-                id,
-                restaurant->getName(),
-                tableId,
-                startTime,
-                endTime,
-                foods
-            );
+            int totalPrice = get<4>(details); 
+            int finalPrice = get<5>(details);
+            reservations.emplace_back(id, restaurant->getName(), tableId, startTime, endTime, foods, totalPrice, finalPrice);
         }
     }
 
@@ -400,10 +392,10 @@ void RestaurantManager::showAllUserReservations(const string& username) {
     }
 
     sort(reservations.begin(), reservations.end(), [](const auto& a, const auto& b) {
-        return get<0>(a) < get<0>(b); 
+        return get<0>(a) < get<0>(b);
     });
 
-    for (const auto& [id, restaurant, tableId, startTime, endTime, foods] : reservations) {
+    for (const auto& [id, restaurant, tableId, startTime, endTime, foods, totalPrice, finalPrice] : reservations) {
         cout << id << ": " << restaurant << " " << tableId << " " << startTime << "-" << endTime;
 
         if (!foods.empty()) {
@@ -412,7 +404,7 @@ void RestaurantManager::showAllUserReservations(const string& username) {
             }
         }
 
-        cout << endl;
+        cout << " " << totalPrice << " " << finalPrice << endl;
     }
 }
 
@@ -426,13 +418,14 @@ void RestaurantManager::showUserReservations(const string& username, const strin
     if (userReservations.empty()) {
         throw runtime_error("Empty");
     }
-
     for (const auto& [id, details] : userReservations) {
         int tableId = get<0>(details);
         int startTime = get<1>(details);
         int endTime = get<2>(details);
         const auto& foods = get<3>(details);
-
+        int totalPrice = get<4>(details); 
+        int finalPrice = get<5>(details);
+       
         cout << id << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
 
         if (!foods.empty()) {
@@ -440,10 +433,9 @@ void RestaurantManager::showUserReservations(const string& username, const strin
                 cout << " " << foodName << "(" << count << ")";
             }
         }
-        cout << endl;
+        cout << " " << totalPrice << " " << finalPrice << endl;
     }
 }
-
 
 void RestaurantManager::showUserReservationById(const string& username, const string& restaurantName, const string& reserveId) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
@@ -464,6 +456,8 @@ void RestaurantManager::showUserReservationById(const string& username, const st
     int startTime = get<1>(details);
     int endTime = get<2>(details);
     const auto& foods = get<3>(details);
+    int totalPrice = get<4>(details);
+    int finalPrice = get<5>(details);
 
     cout << reservationId << ": " << restaurantName << " " << tableId << " " << startTime << "-" << endTime;
 
@@ -473,10 +467,10 @@ void RestaurantManager::showUserReservationById(const string& username, const st
         }
     }
 
-    cout << endl;
+    cout << " " << totalPrice << " " << finalPrice << endl;
 }
 
-void RestaurantManager::deleteReservation(const string& username, const string& restaurantName, int reserveId) {
+void RestaurantManager::deleteReservation(const string& username, const string& restaurantName, int reserveId, UserManager& userManager) {
     Restaurant* restaurant = findRestaurantByName(restaurantName);
     if (!restaurant) {
         throw runtime_error("Not Found");
@@ -490,7 +484,8 @@ void RestaurantManager::deleteReservation(const string& username, const string& 
         throw runtime_error("Permission Denied");
     }
 
-    restaurant->removeReservation(reserveId);
-
-    cout << "OK "<<endl;
+    int finalPrice = 0;
+    restaurant->removeReservation(reserveId, finalPrice);
+    int refundAmount = static_cast<int>(finalPrice * 0.6);
+    userManager.increaseWallet(username, refundAmount);
 }

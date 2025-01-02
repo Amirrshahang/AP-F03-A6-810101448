@@ -20,7 +20,9 @@ private:
     int nextReserveId = 1;
     map<string, string> foods;
     map<int, vector<pair<int, int>>> tables;
-    map<int, tuple<string, int, int, int, vector<pair<string, int>>>> reservations;
+    map<int, tuple<string, int, int, int, vector<pair<string, int>>, int, int>> reservations;
+
+
     Discount discount;
 
 public:
@@ -30,19 +32,16 @@ public:
     string getDistrict() const;
     map<string, string> getFoods() const;
     map<int, vector<pair<int, int>>> getAllReservations() const;
-    map<int, tuple<int, int, int, vector<pair<string, int>>>> getUserReservations(const string& username) const;
     void setDiscount(const Discount& discount);
     const Discount& getDiscount() const;
     void printTables() const;  
     void printReservations() const;
     void printRestaurantDetails() const;
-    void removeReservation(int reserveId);
     bool isTableAvailable(int tableId) const;
     bool isReservationExists(int reserveId) const;
+    void removeReservation(int reserveId, int& finalPrice);
     bool isTimeSlotAvailable(int tableId, int startTime, int endTime) const;
     bool isReservationOwnedByUser(int reserveId, const string& username) const;
-    int addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods);
-
-
-
+    map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> getUserReservations(const string& username) const;
+    int addReservation(int tableId, int startTime, int endTime, const string& username, const vector<pair<string, int>>& orderedFoods,int finalPrice,int totalPrice);
 };
