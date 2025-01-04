@@ -1,4 +1,3 @@
-
 #include "global.hpp"
 
 class DiscountBase {
@@ -7,9 +6,6 @@ public:
     virtual string getDescription() const = 0;
     virtual ~DiscountBase() = default;
 };
-
-
-
 
 class TotalPriceDiscount : public DiscountBase {
 private:
@@ -32,8 +28,6 @@ public:
                ", Value: " + to_string(value);
     }
 };
-
-
 
 class FirstOrderDiscount : public DiscountBase {
 private:

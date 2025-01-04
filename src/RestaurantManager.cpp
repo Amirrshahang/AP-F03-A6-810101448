@@ -311,8 +311,9 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
         totalDiscount += itemDiscount;
     }
     int priceAfterItemDiscount = totalPrice - itemDiscount;
+    bool isFirstReservation = restaurant->isFirstReservationForUser(username); 
 
-    if (discount.firstOrderDiscount.has_value()) {
+    if (discount.firstOrderDiscount.has_value() && isFirstReservation) {
         const auto& [type, value] = discount.firstOrderDiscount.value();
         FirstOrderDiscount firstOrderDisc(type, value);
         int discountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount);
@@ -353,12 +354,13 @@ int RestaurantManager::reserveTable(const string& restaurantName, int tableId, i
                 }
             }
 
-            if (discount.firstOrderDiscount.has_value() && totalDiscount > itemDiscount) {
+            if (discount.firstOrderDiscount.has_value() && totalDiscount > itemDiscount && isFirstReservation) {
                 const auto& [type, value] = discount.firstOrderDiscount.value();
                 FirstOrderDiscount firstOrderDisc(type, value);
                 int firstOrderDiscountValue = firstOrderDisc.calculateDiscount(priceAfterItemDiscount + totalDiscount - itemDiscount);
                 cout << "First Order Discount: " << firstOrderDiscountValue << endl;
             }
+
             cout<<"Total Discount: "<< totalPrice - finalPrice <<endl;
             cout << "Total Price: " << finalPrice << endl;
         }
@@ -487,5 +489,6 @@ void RestaurantManager::deleteReservation(const string& username, const string& 
     int finalPrice = 0;
     restaurant->removeReservation(reserveId, finalPrice);
     int refundAmount = static_cast<int>(finalPrice * 0.6);
-    userManager.increaseWallet(username, refundAmount);
+    userManager.backToWallet(username, refundAmount);
+    cout<<"OK"<<endl;
 }

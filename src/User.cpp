@@ -22,16 +22,6 @@ void User::addReservation(string reservation) {
     reservations.push_back(reservation);
 }
 
-// void User::showReservations() {
-//     if (reservations.empty()) {
-//         cout << "Not Found" << endl;
-//     } else {
-//         for (const auto& res : reservations) {
-//             cout << res << endl;
-//         }
-//     }
-// }
-
 void User::updateDistrict(const string& district) {
     if (districtManager->isDistrictExists(district)) {
         current_district = district;
@@ -40,22 +30,27 @@ void User::updateDistrict(const string& district) {
     }
 }
 
-string User::getUsername() const { return username; }
+string User::getUsername() const { 
+    return username;
+}
 
-bool User::isLoggedIn() const { return is_logged_in; }
+bool User::isLoggedIn() const { 
+    return is_logged_in; 
+}
 
-string User::getDistrict() const { return current_district; }
+string User::getDistrict() const {
+ return current_district; 
+}
 
-double User::getWallet() const { return wallet; }
+double User::getWallet() const { 
+    return wallet; 
+}
 
-
-#include "User.hpp"
-#include <stdexcept>
-#include <iostream>
-#include <regex>
+void User::backToWallet(int amount) { 
+    wallet += amount; 
+}
 
 void User::addToWallet(int amount) {
-
     wallet += amount;
     cout << "OK" << endl;
 }
@@ -67,4 +62,3 @@ bool User::decreaseWallet(int amount) {
     }
     return false;
 }
-

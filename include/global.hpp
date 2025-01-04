@@ -1,21 +1,25 @@
 #pragma once
 
-#include <math.h>
-#include <fstream>
+#include <algorithm>
+#include <stdexcept>
 #include <iostream>
-#include<stdexcept>
+#include <optional>
+#include <fstream>
+#include <cstdlib>
+#include <sstream>
+#include <utility>
 #include <random>
 #include <string>
 #include <vector>
-#include <cstdlib>
-#include <ctime>
-#include <map>
-#include <regex>
-#include <algorithm>
-#include <queue>
-#include <sstream>
 #include <memory>
-#include<set>
+#include <math.h>
+#include <tuple>
+#include <queue>
+#include <ctime>
+#include <regex>
+#include <set>
+#include <map>
+
 using namespace std;
 
 inline const map<string, regex> regexPatterns = {

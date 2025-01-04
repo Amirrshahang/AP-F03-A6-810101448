@@ -2,14 +2,6 @@
 #include "global.hpp"
 #include "Discount.hpp"
 
-#include <string>
-#include <map>
-#include <vector>
-#include <tuple>
-#include <utility>
-
-
-
 class Restaurant {
 private:
     string name;
@@ -29,17 +21,18 @@ public:
     Restaurant(const string& name, const string& district, const string& foods, const string& opening_time, const string& closing_time, const string& number_of_tables);
 
     string getName() const;
-    string getDistrict() const;
-    map<string, string> getFoods() const;
-    map<int, vector<pair<int, int>>> getAllReservations() const;
-    void setDiscount(const Discount& discount);
-    const Discount& getDiscount() const;
-    void printTables() const;  
+    void printTables() const; 
+    string getDistrict() const; 
     void printReservations() const;
+    const Discount& getDiscount() const;
     void printRestaurantDetails() const;
+    map<string, string> getFoods() const;
     bool isTableAvailable(int tableId) const;
+    void setDiscount(const Discount& discount);
     bool isReservationExists(int reserveId) const;
     void removeReservation(int reserveId, int& finalPrice);
+    map<int, vector<pair<int, int>>> getAllReservations() const;
+    bool isFirstReservationForUser(const string& username) const;
     bool isTimeSlotAvailable(int tableId, int startTime, int endTime) const;
     bool isReservationOwnedByUser(int reserveId, const string& username) const;
     map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> getUserReservations(const string& username) const;

@@ -71,16 +71,14 @@ string UserManager::getLoggedInUsername() const {
     return "";
 }
 
-void UserManager::printAllUsers() const {
-    cout << "Registered Users:" << endl;
-    for (const auto& pair : users) {
-        cout << " - " << pair.first << endl;
-    }
+void UserManager::backToWallet(const string& username, int amount) {
+    users[username].backToWallet(amount);
 }
 
 void UserManager::increaseWallet(const string& username, int amount) {
     users[username].addToWallet(amount);
 }
+
 double UserManager::getUserWallet(const string& username) const {
     return users.at(username).getWallet();
 }

@@ -26,6 +26,7 @@ public:
     string getDistrict() const;
     string getUsername() const;
     void addToWallet(int amount);
+    void backToWallet(int amount);
     bool decreaseWallet(int amount);
     bool login(string uname, string pwd);
     void deductFromWallet(double amount);

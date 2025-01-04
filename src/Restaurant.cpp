@@ -25,18 +25,29 @@ Restaurant::Restaurant(const string& name, const string& district, const string&
     discount.foodDiscounts.clear();
 }
 
+string Restaurant::getName() const { 
+    return name; 
+}
 
-string Restaurant::getName() const { return name; }
+string Restaurant::getDistrict() const { 
+    return district; 
+}
 
-string Restaurant::getDistrict() const { return district; }
+map<string, string> Restaurant::getFoods() const { 
+    return foods; 
+}
 
-map<string, string> Restaurant::getFoods() const { return foods; }
+map<int, vector<pair<int, int>>> Restaurant::getAllReservations() const { 
+    return tables; 
+}
 
-map<int, vector<pair<int, int>>> Restaurant::getAllReservations() const { return tables; }
+void Restaurant::setDiscount(const Discount& discountData) { 
+    discount = discountData; 
+}
 
-void Restaurant::setDiscount(const Discount& discountData) { discount = discountData; }
-
-const Discount& Restaurant::getDiscount() const { return discount; }
+const Discount& Restaurant::getDiscount() const {
+    return discount; 
+}
 
 map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> Restaurant::getUserReservations(const string& username) const {
     map<int, tuple<int, int, int, vector<pair<string, int>>, int, int>> userReservations;
@@ -147,6 +158,15 @@ int Restaurant::addReservation(int tableId, int startTime, int endTime, const st
 
 bool Restaurant::isReservationExists(int reserveId) const {
     return reservations.find(reserveId) != reservations.end();
+}
+
+bool Restaurant::isFirstReservationForUser(const string& username) const {
+    for (const auto& [id, details] : reservations) {
+        if (get<0>(details) == username) {
+            return false; 
+        }
+    }
+    return true; 
 }
 
 bool Restaurant::isReservationOwnedByUser(int reserveId, const string& username) const {

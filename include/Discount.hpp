@@ -1,11 +1,6 @@
 #pragma once
 
-#include <string>
-#include <map>
-#include <optional>
-#include <vector>
-
-using namespace std;
+#include "global.hpp"
 
 struct Discount {
     optional<tuple<string, int, int>> totalPriceDiscount; 
