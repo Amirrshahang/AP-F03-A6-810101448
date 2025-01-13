@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Utaste</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playwrite+AU+SA:wght@100..400&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      color: #555;
+      font-size: 2em;
+      margin-top: 200px;
+      margin-bottom: 2px;
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000; 
+      font-family: 'Playwrite AU SA', cursive;
+    } 
+
+    h1 {
+      color: #555;
+      font-size: 6em;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000; 
+      font-family: 'Playwrite AU SA', cursive;
+    } 
+    a {
+        padding: 10px 20px;
+        border: none;
+        background-color: #444;
+        color: white;
+        font-size: 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    a:hover {
+        background-color: #333;
+    }
+    img {
+        width: 25%;
+        transition: transform 0.3s ease;
+        position: absolute;
+        top: 20px; 
+        left: 20px;
+        animation: fadeIn 3s ease;
+    }
+
+    img:hover {
+      transform: scale(1.1);
+    }
+
+    .form-container {
+
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    label {
+      font-size: 1.2em;
+      margin-right: 1px;
+    }
+
+    input[type="number"], input[type="text"] {
+      padding: 8px;
+      font-size: 1em;
+      width: 200px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1.1em;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #444;
+    }
+
+    .logout-button {
+      background-color: #444;
+    }
+
+    .logout-button:hover {
+      background-color: #444;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 1em;
+      color: #777;
+    }
+  </style>
+</head>
+
+  <% if (context["valid"] == "true") { %>
+    <h2>Welcome, <% cout << context["user"]; %></h2>
+  <% } %>
+
+<body>
+  <h1>Utaste</h1>
+    <img src="/home.png" alt="Home Logo">
+
+  <div class="form-container">
+    <form action="/increase-wallet" method="POST">
+      <label for="amount">Increase Wallet :</label>
+      <input type="number" id="amount" name="amount" required min="1">
+      <button type="submit">Submit </button>
+    </form>
+  </div>
+
+  <div class="form-container">
+    <form action="/Putmy_district" method="POST">
+      <label for="district"> Enter District : </label>
+      <input type="text" id="district" name="district" required>
+      <button type="submit">Submit </button>
+    </form>
+  </div>
+
+  <div class="form-container">
+    <button id="showRestaurantButton">Show All Restaurants</button>
+  </div>
+
+    <a href="javascript:history.back()" style="display: block; text-align: center; margin-top: 10px; color: white; text-decoration: none; font-size: 16px;">
+            ← Back to Previous Page
+        </a>
+
+  <div class="form-container">
+    <form action="/logout" method="POST">
+      <button type="submit" class="logout-button">Logout</button>
+    </form>
+  </div>
+
+  
+
+  <script>
+    document.querySelector("form[action='/increase-wallet']").addEventListener("submit", function (event) {
+      const amount = document.getElementById("amount").value;
+      if (amount < 1) {
+        alert("Please enter a valid amount.");
+        event.preventDefault();
+      }
+    });
+
+    const logoutButton = document.querySelector("button.logout-button");
+    logoutButton.addEventListener("click", function (event) {
+      const confirmed = confirm("Are you sure you want to log out?");
+      if (!confirmed) {
+        event.preventDefault();
+      }
+    });
+
+    const showRestaurantButton = document.getElementById("showRestaurantButton");
+    showRestaurantButton.addEventListener("click", function () {
+      window.location.href = "/resturantPage";
+    });
+  </script>
+
+
+</body>
+
+</html>

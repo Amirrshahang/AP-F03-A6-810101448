@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Reservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        div {
+            background-color: #fff;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0);
+            width: 80%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        a {
+            padding: 10px 20px;
+            border: none;
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        a:hover {
+            background-color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .input-row input {
+            width: 48%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0);
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #333;
+
+        }
+
+        p {
+            margin-bottom: 0px;
+            text-align: center;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .success {
+            color: green;
+            font-size: 14px;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div>
+        <% if (context["result"] != "") { %>
+            <p><% cout << context["result"]; %></p>
+        <% } else { %>
+            <p>No Restaurant to display.</p>
+        <% } %>
+    </div>
+
+    <h2>Restaurant Details</h2>
+
+
+    <form id="restaurantForm" method="GET" action="/RestaurantDetails">
+        <input type="text" name="restaurantName" id="restaurantName" placeholder="Restaurant Name" required>
+        <button type="submit">Submit</button>
+        <p id="feedback" class="error"></p>
+    </form>
+
+    <h2>Reserve a Restaurant</h2>
+
+    <form id="reserveForm" method="GET" action="/reserve">
+        <!-- <div class="input-row"> -->
+            <input type="text" name="restaurantName" id="restaurantNameReserve" placeholder="Restaurant Name" required>
+            <input type="text" name="table_id" id="table_id" placeholder="Table ID" required>
+        <!-- </div> -->
+
+        <input type="text" name="foodname" id="foodname" placeholder="Foods Name">
+
+        <!-- <div class="input-row"> -->
+            <input type="text" name="start_time" id="start_time" placeholder="Start Time" required>
+            <input type="text" name="end_time" id="end_time" placeholder="End Time" required>
+        <!-- </div> -->
+
+        <button type="submit">Reserve </button>
+        <p id="reserveFeedback" class="error"></p>
+    </form>
+
+    <form id="showReservationBtn" method="GET" action="/ShowReserve">
+        <button type="button" >Show All Reservations</button>
+        <p>
+            <a href="javascript:history.back()" style="display: block; text-align: center; margin-top: 0px; color: white; text-decoration: none; font-size: 16px;">
+                ← Back to Previous Page
+            </a>
+        </p>
+
+    </form>
+
+<script>
+    document.getElementById("restaurantForm").addEventListener("submit", function(event) {
+        event.preventDefault(); 
+
+        var restaurantName = document.getElementById("restaurantName").value.trim();
+        var feedbackElement = document.getElementById("feedback");
+
+        if (restaurantName === "") {
+            feedbackElement.textContent = "Please enter a restaurant name.";
+            feedbackElement.className = "error";
+        } else {
+            feedbackElement.className = "success";
+            setTimeout(function() {
+                document.getElementById("restaurantForm").submit();
+            }, 2000);
+        }
+    });
+
+    document.getElementById("reserveForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        var restaurantName = document.getElementById("restaurantNameReserve").value.trim();
+        var tableId = document.getElementById("table_id").value.trim();
+        var startTime = document.getElementById("start_time").value.trim();
+        var endTime = document.getElementById("end_time").value.trim();
+        var foodName = document.getElementById("foodname").value.trim(); 
+        var reserveFeedbackElement = document.getElementById("reserveFeedback");
+
+        if (foodName === "") {
+            document.getElementById("foodname").value = "Empty";
+        }
+
+        if (restaurantName === "" || tableId === "" || startTime === "" || endTime === "") {
+            reserveFeedbackElement.textContent = "Please fill all required fields.";
+            reserveFeedbackElement.className = "error";
+        } else {
+            reserveFeedbackElement.className = "success";
+            setTimeout(function() {
+                document.getElementById("reserveForm").submit();
+            }, 2000);
+        }
+    });
+
+    document.getElementById("showReservationBtn").addEventListener("click", function() {
+        window.location.href = "/ShowReserve";
+    });
+</script>
+
+</body>
+</html>
